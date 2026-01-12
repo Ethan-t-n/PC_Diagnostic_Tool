@@ -5,68 +5,117 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Text;
+using System.Text.Json;
+
 
 
 class Program
 {
     static void Main()
     {
-        Console.WriteLine("PC Diagnostic Tool v0.1");
-        Console.WriteLine("------------------------");
+        var report = new StringBuilder();
 
-        PrintBasicSystemInfo();
-        PrintDiskInfo();
-        PrintNetworkInfo();
+        void Log(string line = "")
+        {
+            Console.WriteLine(line);
+            report.AppendLine(line);
+        }
 
-        Console.WriteLine("\nScan complete.");
+        Log("PC Diagnostic Tool v0.3");
+        Log("------------------------");
+
+        PrintBasicSystemInfo(Log);
+        PrintDiskInfo(Log);
+        PrintNetworkInfo(Log);
+
+        Log();
+        Log("Scan complete.");
+
+        ExportReports(report.ToString());
     }
 
-    static void PrintBasicSystemInfo()
+    static void ExportReports(string textReport)
     {
-        Console.WriteLine("\n== System Info ==");
+        try
+        {
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var folder = Path.Combine(Environment.CurrentDirectory, "reports");
+            Directory.CreateDirectory(folder);
 
-        Console.WriteLine($"OS: {RuntimeInformation.OSDescription}");
-        Console.WriteLine($"Architecture: {RuntimeInformation.OSArchitecture}");
-        Console.WriteLine($"Machine Name: {Environment.MachineName}");
-        Console.WriteLine($"User: {Environment.UserName}");
-        Console.WriteLine($"CPU Cores: {Environment.ProcessorCount}");
+            var txtPath = Path.Combine(folder, $"pc_diagnostic_{timestamp}.txt");
+            File.WriteAllText(txtPath, textReport);
+
+            var jsonPath = Path.Combine(folder, $"pc_diagnostic_{timestamp}.json");
+            var jsonObj = new
+            {
+                generatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                machineName = Environment.MachineName,
+                report = textReport
+            };
+
+            var json = JsonSerializer.Serialize(jsonObj, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(jsonPath, json);
+
+            Console.WriteLine($"\nReports saved:");
+            Console.WriteLine($"- {txtPath}");
+            Console.WriteLine($"- {jsonPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\nFailed to export reports: {ex.Message}");
+        }
+    }
+
+
+    static void PrintBasicSystemInfo(Action<string> Log)
+    {
+        Log("\n== System Info ==");
+
+        Log($"OS: {RuntimeInformation.OSDescription}");
+        Log($"Architecture: {RuntimeInformation.OSArchitecture}");
+        Log($"Machine Name: {Environment.MachineName}");
+        Log($"User: {Environment.UserName}");
+        Log($"CPU Cores: {Environment.ProcessorCount}");
 
         var cpuModel = GetCpuModel();
         if (!string.IsNullOrWhiteSpace(cpuModel))
-            Console.WriteLine($"CPU Model: {cpuModel}");
+            Log($"CPU Model: {cpuModel}");
 
         var ramBytes = GetTotalRamBytes();
         if (ramBytes.HasValue)
-            Console.WriteLine($"RAM: {ramBytes.Value / 1024 / 1024 / 1024} GB");
+            Log($"RAM: {ramBytes.Value / 1024 / 1024 / 1024} GB");
 
-        Console.WriteLine($".NET Version: {Environment.Version}");
+        Log($".NET Version: {Environment.Version}");
 
         var uptime = GetSystemUptime();
-        Console.WriteLine($"Uptime: {FormatUptime(uptime)}");
-        Console.WriteLine($"Last Boot: {GetLastBootTime(uptime)}");
+        Log($"Uptime: {FormatUptime(uptime)}");
+        Log($"Last Boot: {GetLastBootTime(uptime)}");
+
+        Log($".NET Version: {Environment.Version}");
 
     }
 
-    static void PrintDiskInfo()
+    static void PrintDiskInfo(Action<string> Log)
     {
-        Console.WriteLine("\n== Disk Info ==");
+        Log("\n== Disk Info ==");
 
         foreach (var drive in DriveInfo.GetDrives())
         {
             if (!drive.IsReady) continue;
 
-            Console.WriteLine($"Drive: {drive.Name}");
-            Console.WriteLine($"  Format: {drive.DriveFormat}");
-            Console.WriteLine($"  Total: {ToGb(drive.TotalSize)} GB");
-            Console.WriteLine($"  Free:  {ToGb(drive.AvailableFreeSpace)} GB");
+            Log($"Drive: {drive.Name}");
+            Log($"  Format: {drive.DriveFormat}");
+            Log($"  Total: {ToGb(drive.TotalSize)} GB");
+            Log($"  Free:  {ToGb(drive.AvailableFreeSpace)} GB");
         }
     }
 
-    static void PrintNetworkInfo()
+    static void PrintNetworkInfo(Action<string> Log)
     {
-        Console.WriteLine("\n== Network Info ==");
+        Log("\n== Network Info ==");
 
-        Console.WriteLine($"Host: {Dns.GetHostName()}");
+        Log($"Host: {Dns.GetHostName()}");
 
         var activeAdapters = NetworkInterface.GetAllNetworkInterfaces()
         .Where(nic => nic.OperationalStatus == OperationalStatus.Up)
@@ -85,7 +134,7 @@ class Program
         if (activeAdapters.Count == 0)
 
         {
-            Console.WriteLine("No network adapters found.");
+            Log("No active network adapters found.");
             return;
         }
 
@@ -104,45 +153,45 @@ class Program
         var bestIPv4 = primary.Unicast.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
         var bestIPv6 = primary.Unicast.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6);
 
-        Console.WriteLine("\n-- Network Summary --");
-        Console.WriteLine($"Primary Adapter: {primary.Nic.Name} ({primary.Nic.NetworkInterfaceType})");
-        Console.WriteLine($"IPv4: {(bestIPv4?.ToString() ?? "(none)")}");
-        Console.WriteLine($"IPv6: {(bestIPv6?.ToString() ?? "(none)")}");
-        Console.WriteLine($"Gateway: {(primaryGateway?.ToString() ?? "(none)")}");
-        Console.WriteLine($"DNS: {(primaryDns.Count > 0 ? string.Join(", ", primaryDns) : "(none)")}");
+        Log("\n-- Network Summary --");
+        Log($"Primary Adapter: {primary.Nic.Name} ({primary.Nic.NetworkInterfaceType})");
+        Log($"IPv4: {(bestIPv4?.ToString() ?? "(none)")}");
+        Log($"IPv6: {(bestIPv6?.ToString() ?? "(none)")}");
+        Log($"Gateway: {(primaryGateway?.ToString() ?? "(none)")}");
+        Log($"DNS: {(primaryDns.Count > 0 ? string.Join(", ", primaryDns) : "(none)")}");
 
-        Console.WriteLine("\n-- Connectivity Tests --");
+        Log("\n-- Connectivity Tests --");
 
         if (primaryGateway != null)
         {
-            Console.WriteLine($"Ping Gateway ({primaryGateway}) : {PingHost(primaryGateway.ToString())}");
+            Log($"Ping Gateway ({primaryGateway}) : {PingHost(primaryGateway.ToString())}");
         }
         else
         {
-            Console.WriteLine("Ping Gateway : (skipped - no gateway found)");
+            Log("Ping Gateway : (skipped - no gateway found)");
         }
 
-        Console.WriteLine($"Ping 1.1.1.1 : {PingHost("1.1.1.1")}");
+        Log($"Ping 1.1.1.1 : {PingHost("1.1.1.1")}");
 
-        Console.WriteLine("\n-- Active Adapters --");
+        Log("\n-- Active Adapters --");
 
         foreach (var x in activeAdapters)
         {
             var nic = x.Nic;
             var props = x.Props;
 
-            Console.WriteLine($"\nAdapter: {nic.Name}");
-            Console.WriteLine($"  Description: {nic.Description}");
-            Console.WriteLine($"  Type: {nic.NetworkInterfaceType}");
-            Console.WriteLine($"  Status: {nic.OperationalStatus}");
-            Console.WriteLine($"  MAC: {FormatMac(nic.GetPhysicalAddress())}");
+            Log($"\nAdapter: {nic.Name}");
+            Log($"  Description: {nic.Description}");
+            Log($"  Type: {nic.NetworkInterfaceType}");
+            Log($"  Status: {nic.OperationalStatus}");
+            Log($"  MAC: {FormatMac(nic.GetPhysicalAddress())}");
 
             if (nic.Speed > 0)
-                Console.WriteLine($"  Link Speed: {nic.Speed / 1_000_000} Mbps");
+                Log($"  Link Speed: {nic.Speed / 1_000_000} Mbps");
 
-            Console.WriteLine("  IP Addresses:");
+            Log("  IP Addresses:");
             foreach (var ip in x.Unicast)
-                Console.WriteLine($"    - {ip}");
+                Log($"    - {ip}");
 
             var gateways = props.GatewayAddresses
                 .Select(g => g.Address)
@@ -151,9 +200,9 @@ class Program
 
             if (gateways.Count > 0)
             {
-                Console.WriteLine("  Gateways:");
+                Log("  Gateways:");
                 foreach (var gw in gateways)
-                    Console.WriteLine($"    - {gw}");
+                    Log($"    - {gw}");
             }
 
             // DNS servers
@@ -163,9 +212,9 @@ class Program
 
             if (dns.Count > 0)
             {
-                Console.WriteLine("  DNS Servers:");
+                Log("  DNS Servers:");
                 foreach (var d in dns)
-                    Console.WriteLine($"    - {d}");
+                    Log($"    - {d}");
             }
         }
     }
