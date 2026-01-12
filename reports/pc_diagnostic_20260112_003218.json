@@ -1,0 +1,112 @@
+{
+  "GeneratedAt": "2026-01-12 00:32:18",
+  "MachineName": "Ethans-MacBook-Pro",
+  "System": {
+    "OsDescription": "macOS 26.2.0",
+    "Architecture": "Arm64",
+    "UserName": "ethan",
+    "CpuCores": 8,
+    "CpuModel": "Apple M1",
+    "RamBytes": 8589934592,
+    "UptimeSeconds": 25432,
+    "LastBootLocal": "2026-01-11 17:28:25",
+    "DotNetVersion": "10.0.1"
+  },
+  "Disks": [
+    {
+      "Name": "/",
+      "Format": "apfs",
+      "TotalBytes": 245107195904,
+      "FreeBytes": 37913976832
+    },
+    {
+      "Name": "/dev",
+      "Format": "devfs",
+      "TotalBytes": 206336,
+      "FreeBytes": 0
+    },
+    {
+      "Name": "/System/Volumes/VM",
+      "Format": "apfs",
+      "TotalBytes": 245107195904,
+      "FreeBytes": 37913976832
+    },
+    {
+      "Name": "/System/Volumes/Preboot",
+      "Format": "apfs",
+      "TotalBytes": 245107195904,
+      "FreeBytes": 37913976832
+    },
+    {
+      "Name": "/System/Volumes/Update",
+      "Format": "apfs",
+      "TotalBytes": 245107195904,
+      "FreeBytes": 37913976832
+    },
+    {
+      "Name": "/System/Volumes/xarts",
+      "Format": "apfs",
+      "TotalBytes": 524288000,
+      "FreeBytes": 501313536
+    },
+    {
+      "Name": "/System/Volumes/iSCPreboot",
+      "Format": "apfs",
+      "TotalBytes": 524288000,
+      "FreeBytes": 501313536
+    },
+    {
+      "Name": "/System/Volumes/Hardware",
+      "Format": "apfs",
+      "TotalBytes": 524288000,
+      "FreeBytes": 501313536
+    },
+    {
+      "Name": "/System/Volumes/Data",
+      "Format": "apfs",
+      "TotalBytes": 245107195904,
+      "FreeBytes": 37913976832
+    },
+    {
+      "Name": "/System/Volumes/Data/home",
+      "Format": "autofs",
+      "TotalBytes": 0,
+      "FreeBytes": 0
+    }
+  ],
+  "Network": {
+    "Host": "Ethans-MacBook-Pro.local",
+    "PrimaryAdapterName": "en0",
+    "PrimaryAdapterType": "Wireless80211",
+    "IPv4": "192.168.1.152",
+    "IPv6": "fd63:d72f:1835:8343:8cd:e8ac:ed41:89eb",
+    "Gateway": "192.168.1.1",
+    "DnsServers": [
+      "192.168.1.1"
+    ],
+    "Pings": {
+      "GatewayPing": "OK (4 ms)",
+      "InternetPing": "OK (19 ms)"
+    },
+    "ActiveAdapters": [
+      {
+        "Name": "en0",
+        "Description": "en0",
+        "Type": "Wireless80211",
+        "Status": "Up",
+        "Mac": "52:D7:A1:E1:4F:40",
+        "LinkSpeedMbps": 228,
+        "IpAddresses": [
+          "192.168.1.152",
+          "fd63:d72f:1835:8343:8cd:e8ac:ed41:89eb"
+        ],
+        "Gateways": [
+          "192.168.1.1"
+        ],
+        "DnsServers": [
+          "192.168.1.1"
+        ]
+      }
+    ]
+  }
+}

@@ -7,6 +7,8 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using System.Collections.Generic;
+
 
 
 
@@ -35,6 +37,199 @@ class Program
         ExportReports(report.ToString());
     }
 
+    class DiagnosticReport
+    {
+        public string GeneratedAt { get; set; } = "";
+        public string MachineName { get; set; } = "";
+        public SystemInfo System { get; set; } = new();
+        public List<DiskInfo> Disks { get; set; } = new();
+        public NetworkInfo Network { get; set; } = new();
+    }
+
+    class SystemInfo
+    {
+        public string OsDescription { get; set; } = "";
+        public string Architecture { get; set; } = "";
+        public string UserName { get; set; } = "";
+        public int CpuCores { get; set; }
+        public string CpuModel { get; set; } = "";
+        public long? RamBytes { get; set; }
+        public long UptimeSeconds { get; set; }
+        public string LastBootLocal { get; set; } = "";
+        public string DotNetVersion { get; set; } = "";
+    }
+
+    class DiskInfo
+    {
+        public string Name { get; set; } = "";
+        public string Format { get; set; } = "";
+        public long TotalBytes { get; set; }
+        public long FreeBytes { get; set; }
+    }
+
+    class NetworkInfo
+    {
+        public string Host { get; set; } = "";
+        public string PrimaryAdapterName { get; set; } = "";
+        public string PrimaryAdapterType { get; set; } = "";
+        public string? IPv4 { get; set; }
+        public string? IPv6 { get; set; }
+        public string? Gateway { get; set; }
+        public List<string> DnsServers { get; set; } = new();
+        public PingResults Pings { get; set; } = new();
+        public List<AdapterInfo> ActiveAdapters { get; set; } = new();
+    }
+
+    class AdapterInfo
+    {
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Type { get; set; } = "";
+        public string Status { get; set; } = "";
+        public string Mac { get; set; } = "";
+        public long? LinkSpeedMbps { get; set; }
+        public List<string> IpAddresses { get; set; } = new();
+        public List<string> Gateways { get; set; } = new();
+        public List<string> DnsServers { get; set; } = new();
+    }
+
+    class PingResults
+    {
+        public string? GatewayPing { get; set; }
+        public string InternetPing { get; set; } = "";
+    }
+
+    static DiagnosticReport BuildStructuredReport()
+    {
+        var uptime = GetSystemUptime();
+
+        var system = new SystemInfo
+        {
+            OsDescription = RuntimeInformation.OSDescription,
+            Architecture = RuntimeInformation.OSArchitecture.ToString(),
+            UserName = Environment.UserName,
+            CpuCores = Environment.ProcessorCount,
+            CpuModel = GetCpuModel(),
+            RamBytes = GetTotalRamBytes(),
+            UptimeSeconds = (long)uptime.TotalSeconds,
+            LastBootLocal = GetLastBootTime(uptime),
+            DotNetVersion = Environment.Version.ToString()
+        };
+
+        var disks = DriveInfo.GetDrives()
+            .Where(d => d.IsReady)
+            .Select(d => new DiskInfo
+            {
+                Name = d.Name,
+                Format = d.DriveFormat,
+                TotalBytes = d.TotalSize,
+                FreeBytes = d.AvailableFreeSpace
+            })
+            .ToList();
+
+        var network = BuildNetworkInfo();
+
+        return new DiagnosticReport
+        {
+            GeneratedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            MachineName = Environment.MachineName,
+            System = system,
+            Disks = disks,
+            Network = network
+        };
+    }
+
+    static NetworkInfo BuildNetworkInfo()
+    {
+        var result = new NetworkInfo
+        {
+            Host = Dns.GetHostName()
+        };
+
+        var activeAdapters = NetworkInterface.GetAllNetworkInterfaces()
+            .Where(nic => nic.OperationalStatus == OperationalStatus.Up)
+            .Select(nic => new
+            {
+                Nic = nic,
+                Props = nic.GetIPProperties(),
+                Unicast = nic.GetIPProperties().UnicastAddresses
+                    .Select(u => u.Address)
+                    .Where(a => !IPAddress.IsLoopback(a) && !IsLinkLocal(a))
+                    .ToList()
+            })
+            .Where(x => x.Unicast.Count > 0)
+            .ToList();
+
+        if (activeAdapters.Count == 0)
+        {
+            result.Pings.InternetPing = PingHost("1.1.1.1");
+            return result;
+        }
+
+        var primary = activeAdapters
+            .OrderByDescending(x => x.Props.GatewayAddresses.Any(g => g.Address != null && !IPAddress.IsLoopback(g.Address)))
+            .First();
+
+        result.PrimaryAdapterName = primary.Nic.Name;
+        result.PrimaryAdapterType = primary.Nic.NetworkInterfaceType.ToString();
+
+        var primaryGateway = primary.Props.GatewayAddresses
+            .Select(g => g.Address)
+            .FirstOrDefault(a => a != null && !IPAddress.IsLoopback(a));
+
+        result.Gateway = primaryGateway?.ToString();
+
+        result.DnsServers = primary.Props.DnsAddresses
+            .Where(a => a != null && !IPAddress.IsLoopback(a))
+            .Select(a => a.ToString())
+            .ToList();
+
+        result.IPv4 = primary.Unicast
+            .FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+            ?.ToString();
+
+        result.IPv6 = primary.Unicast
+            .FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
+            ?.ToString();
+
+        result.Pings.GatewayPing = primaryGateway != null ? PingHost(primaryGateway.ToString()) : null;
+        result.Pings.InternetPing = PingHost("1.1.1.1");
+
+        foreach (var x in activeAdapters)
+        {
+            var nic = x.Nic;
+            var props = x.Props;
+
+            var adapter = new AdapterInfo
+            {
+                Name = nic.Name,
+                Description = nic.Description,
+                Type = nic.NetworkInterfaceType.ToString(),
+                Status = nic.OperationalStatus.ToString(),
+                Mac = FormatMac(nic.GetPhysicalAddress()),
+                LinkSpeedMbps = nic.Speed > 0 ? nic.Speed / 1_000_000 : null,
+                IpAddresses = x.Unicast.Select(ip => ip.ToString()).ToList(),
+                Gateways = props.GatewayAddresses
+                    .Select(g => g.Address)
+                    .Where(a => a != null && !IPAddress.IsLoopback(a))
+                    .Select(a => a!.ToString())
+                    .ToList(),
+                DnsServers = props.DnsAddresses
+                    .Where(a => a != null && !IPAddress.IsLoopback(a))
+                    .Select(a => a.ToString())
+                    .ToList()
+            };
+
+            result.ActiveAdapters.Add(adapter);
+        }
+
+        return result;
+    }
+
+
+
+
+
     static void ExportReports(string textReport)
     {
         try
@@ -47,14 +242,9 @@ class Program
             File.WriteAllText(txtPath, textReport);
 
             var jsonPath = Path.Combine(folder, $"pc_diagnostic_{timestamp}.json");
-            var jsonObj = new
-            {
-                generatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                machineName = Environment.MachineName,
-                report = textReport
-            };
+            var reportObj = BuildStructuredReport();
+            var json = JsonSerializer.Serialize(reportObj, new JsonSerializerOptions { WriteIndented = true });
 
-            var json = JsonSerializer.Serialize(jsonObj, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(jsonPath, json);
 
             Console.WriteLine($"\nReports saved:");
@@ -85,8 +275,6 @@ class Program
         var ramBytes = GetTotalRamBytes();
         if (ramBytes.HasValue)
             Log($"RAM: {ramBytes.Value / 1024 / 1024 / 1024} GB");
-
-        Log($".NET Version: {Environment.Version}");
 
         var uptime = GetSystemUptime();
         Log($"Uptime: {FormatUptime(uptime)}");
@@ -148,6 +336,7 @@ class Program
 
         var primaryDns = primary.Props.DnsAddresses
             .Where(a => a != null && !IPAddress.IsLoopback(a))
+            .Select(a => a.ToString())
             .ToList();
 
         var bestIPv4 = primary.Unicast.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
