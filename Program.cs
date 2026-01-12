@@ -12,7 +12,7 @@ using System.Collections.Generic;
 
 
 
-class Program
+public class Program
 {
     static void Main()
     {
@@ -30,6 +30,8 @@ class Program
         PrintBasicSystemInfo(Log);
         PrintDiskInfo(Log);
         PrintNetworkInfo(Log);
+        PrintBatteryInfo(Log);
+
 
         Log();
         Log("Scan complete.");
@@ -44,6 +46,8 @@ class Program
         public SystemInfo System { get; set; } = new();
         public List<DiskInfo> Disks { get; set; } = new();
         public NetworkInfo Network { get; set; } = new();
+        public BatteryInfo Battery { get; set; } = new();
+
     }
 
     class SystemInfo
@@ -93,6 +97,20 @@ class Program
         public List<string> DnsServers { get; set; } = new();
     }
 
+    public class BatteryInfo
+    {
+        public bool IsPresent { get; set; }
+        public int? Percentage { get; set; }
+        public bool? IsCharging { get; set; }
+        public string? Condition { get; set; }         
+        public int? CycleCount { get; set; }            
+        public int? DesignCapacitymAh { get; set; }     
+        public int? FullChargeCapacitymAh { get; set; } 
+        public string? Source { get; set; }             
+        public string? Notes { get; set; }
+    }
+
+
     class PingResults
     {
         public string? GatewayPing { get; set; }
@@ -102,6 +120,8 @@ class Program
     static DiagnosticReport BuildStructuredReport()
     {
         var uptime = GetSystemUptime();
+        var battery = BatteryCollector.GetBatteryInfo();
+
 
         var system = new SystemInfo
         {
@@ -135,7 +155,8 @@ class Program
             MachineName = Environment.MachineName,
             System = system,
             Disks = disks,
-            Network = network
+            Network = network,
+            Battery = battery
         };
     }
 
@@ -413,6 +434,28 @@ class Program
         }
     }
 
+    static void PrintBatteryInfo(Action<string> Log)
+    {
+        Log("\n== Battery Info ==");
+
+        var b = BatteryCollector.GetBatteryInfo();
+
+        if (!b.IsPresent)
+        {
+            Log("No battery detected.");
+            if (!string.IsNullOrWhiteSpace(b.Notes)) Log($"Notes: {b.Notes}");
+            return;
+        }
+
+        if (b.Percentage.HasValue) Log($"Charge: {b.Percentage.Value}%");
+        if (b.IsCharging.HasValue) Log($"Charging: {b.IsCharging.Value}");
+        if (!string.IsNullOrWhiteSpace(b.Condition)) Log($"Condition: {b.Condition}");
+        if (b.CycleCount.HasValue) Log($"Cycle Count: {b.CycleCount.Value}");
+        if (b.FullChargeCapacitymAh.HasValue) Log($"Full Charge Capacity: {b.FullChargeCapacitymAh.Value} mAh");
+        if (b.DesignCapacitymAh.HasValue) Log($"Design Capacity: {b.DesignCapacitymAh.Value} mAh");
+    }
+
+
 
     static long ToGb(long bytes) => bytes / 1024 / 1024 / 1024;
 
@@ -544,7 +587,6 @@ class Program
 
     static TimeSpan GetSystemUptime()
     {
-        // Milliseconds since system start
         return TimeSpan.FromMilliseconds(Environment.TickCount64);
     }
 
