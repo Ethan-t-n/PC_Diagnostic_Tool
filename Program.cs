@@ -43,6 +43,7 @@ class Program
 
         var uptime = GetSystemUptime();
         Console.WriteLine($"Uptime: {FormatUptime(uptime)}");
+        Console.WriteLine($"Last Boot: {GetLastBootTime(uptime)}");
 
     }
 
@@ -308,6 +309,12 @@ class Program
     {
         return $"{uptime.Days}d {uptime.Hours:D2}h {uptime.Minutes:D2}m {uptime.Seconds:D2}s";
     }
+    static string GetLastBootTime(TimeSpan uptime)
+    {
+        var bootTime = DateTime.Now - uptime;
+        return bootTime.ToString("yyyy-MM-dd HH:mm:ss");
+    }
+
 
 }
 
