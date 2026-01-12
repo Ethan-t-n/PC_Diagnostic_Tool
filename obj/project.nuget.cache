@@ -1,8 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "2RC+GrFljU0=",
+  "dgSpecHash": "NWgtZPabGVQ=",
   "success": true,
   "projectFilePath": "/Users/ethan/c#_practice/PC_Diagnostic_Tool/PC_Diagnostic_Tool.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "/Users/ethan/.nuget/packages/system.codedom/10.0.1/system.codedom.10.0.1.nupkg.sha512",
+    "/Users/ethan/.nuget/packages/system.management/10.0.1/system.management.10.0.1.nupkg.sha512"
+  ],
   "logs": []
 }

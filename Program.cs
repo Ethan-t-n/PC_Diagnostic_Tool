@@ -4,6 +4,8 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
+
 
 class Program
 {
@@ -28,6 +30,15 @@ class Program
         Console.WriteLine($"Machine Name: {Environment.MachineName}");
         Console.WriteLine($"User: {Environment.UserName}");
         Console.WriteLine($"CPU Cores: {Environment.ProcessorCount}");
+
+        var cpuModel = GetCpuModel();
+        if (!string.IsNullOrWhiteSpace(cpuModel))
+            Console.WriteLine($"CPU Model: {cpuModel}");
+
+        var ramBytes = GetTotalRamBytes();
+        if (ramBytes.HasValue)
+            Console.WriteLine($"RAM: {ramBytes.Value / 1024 / 1024 / 1024} GB");
+
         Console.WriteLine($".NET Version: {Environment.Version}");
     }
 
@@ -197,5 +208,91 @@ class Program
             return $"Error ({ex.GetType().Name})";
         }
     }
-}
+    static string GetCpuModel()
+    {
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return RunCommand("sysctl", "-n machdep.cpu.brand_string").Trim();
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return GetWindowsWmiValue("Win32_Processor", "Name");
+            }
+        }
+        catch { }
+
+        return "";
+    }
+
+    static long? GetTotalRamBytes()
+    {
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                var memBytes = RunCommand("sysctl", "-n hw.memsize").Trim();
+                if (long.TryParse(memBytes, out long bytes))
+                    return bytes;
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var val = GetWindowsWmiValue("Win32_ComputerSystem", "TotalPhysicalMemory");
+                if (long.TryParse(val, out long bytes))
+                    return bytes;
+            }
+        }
+        catch { }
+
+        return null;
+    }
+
+    static string RunCommand(string fileName, string args)
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = args,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(psi);
+        string output = process!.StandardOutput.ReadToEnd();
+        string error = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+
+        return string.IsNullOrWhiteSpace(output) ? error : output;
+    }
+
+    static string GetWindowsWmiValue(string className, string propertyName)
+    {
+        try
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return "";
+
+            using var searcher = new System.Management.ManagementObjectSearcher(
+                $"SELECT {propertyName} FROM {className}");
+
+            using var results = searcher.Get();
+
+            foreach (var obj in results)
+            {
+                var val = obj[propertyName];
+                if (val != null)
+                    return val.ToString() ?? "";
+            }
+        }
+        catch { }
+
+        return "";
+    }
+}   // ← THIS is now the end of class Program
+
 
