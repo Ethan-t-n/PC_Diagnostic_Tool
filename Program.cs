@@ -40,6 +40,10 @@ class Program
             Console.WriteLine($"RAM: {ramBytes.Value / 1024 / 1024 / 1024} GB");
 
         Console.WriteLine($".NET Version: {Environment.Version}");
+
+        var uptime = GetSystemUptime();
+        Console.WriteLine($"Uptime: {FormatUptime(uptime)}");
+
     }
 
     static void PrintDiskInfo()
@@ -293,6 +297,18 @@ class Program
 
         return "";
     }
-}   // ← THIS is now the end of class Program
+
+    static TimeSpan GetSystemUptime()
+    {
+        // Milliseconds since system start
+        return TimeSpan.FromMilliseconds(Environment.TickCount64);
+    }
+
+    static string FormatUptime(TimeSpan uptime)
+    {
+        return $"{uptime.Days}d {uptime.Hours:D2}h {uptime.Minutes:D2}m {uptime.Seconds:D2}s";
+    }
+
+}
 
 

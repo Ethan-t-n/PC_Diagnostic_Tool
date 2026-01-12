@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PC_Diagnostic_Tool")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+076706b813b12acb815b6a952acb47debad7c2e3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+330a4ad2fbabbc19e876f033504990894a2e60e9")]
 [assembly: System.Reflection.AssemblyProductAttribute("PC_Diagnostic_Tool")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PC_Diagnostic_Tool")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
