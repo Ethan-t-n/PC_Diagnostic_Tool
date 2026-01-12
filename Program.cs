@@ -282,6 +282,11 @@ class Program
 
         Log($".NET Version: {Environment.Version}");
 
+        var (cpuPct, ramPct) = PerformanceCollector.GetCpuAndRamUsage();
+        if (cpuPct.HasValue) Log($"CPU Usage: {cpuPct.Value:F1}%");
+        if (ramPct.HasValue) Log($"RAM Usage: {ramPct.Value:F1}%");
+
+
     }
 
     static void PrintDiskInfo(Action<string> Log)
@@ -470,7 +475,7 @@ class Program
         return "";
     }
 
-    static long? GetTotalRamBytes()
+    public static long? GetTotalRamBytes()
     {
         try
         {
@@ -493,7 +498,7 @@ class Program
         return null;
     }
 
-    static string RunCommand(string fileName, string args)
+    public static string RunCommand(string fileName, string args)
     {
         var psi = new ProcessStartInfo
         {

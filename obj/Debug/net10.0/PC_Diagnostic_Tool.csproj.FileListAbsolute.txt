@@ -18,3 +18,10 @@
 /Users/ethan/c#_practice/PC_Diagnostic_Tool/bin/Debug/net10.0/runtimes/win/lib/net10.0/System.Management.dll
 /Users/ethan/c#_practice/PC_Diagnostic_Tool/obj/Debug/net10.0/PC_Diagnostic_Tool.csproj.AssemblyReference.cache
 /Users/ethan/c#_practice/PC_Diagnostic_Tool/obj/Debug/net10.0/PC_Diagn.5051C682.Up2Date
+/Users/ethan/c#_practice/PC_Diagnostic_Tool/bin/Debug/net10.0/System.Configuration.ConfigurationManager.dll
+/Users/ethan/c#_practice/PC_Diagnostic_Tool/bin/Debug/net10.0/System.Diagnostics.EventLog.dll
+/Users/ethan/c#_practice/PC_Diagnostic_Tool/bin/Debug/net10.0/System.Diagnostics.PerformanceCounter.dll
+/Users/ethan/c#_practice/PC_Diagnostic_Tool/bin/Debug/net10.0/System.Security.Cryptography.ProtectedData.dll
+/Users/ethan/c#_practice/PC_Diagnostic_Tool/bin/Debug/net10.0/runtimes/win/lib/net10.0/System.Diagnostics.EventLog.Messages.dll
+/Users/ethan/c#_practice/PC_Diagnostic_Tool/bin/Debug/net10.0/runtimes/win/lib/net10.0/System.Diagnostics.EventLog.dll
+/Users/ethan/c#_practice/PC_Diagnostic_Tool/bin/Debug/net10.0/runtimes/win/lib/net10.0/System.Diagnostics.PerformanceCounter.dll
