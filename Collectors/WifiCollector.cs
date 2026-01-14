@@ -25,32 +25,30 @@ public static class WifiCollector
 
     private static Program.WifiInfo GetMacWifiInfo()
     {
-        var airportPath =
-            "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport";
-
-        var info = new Program.WifiInfo { Source = "macOS:airport -I" };
+        var info = new Program.WifiInfo { Source = "macOS:networksetup (+ airport if available)" };
 
         try
         {
-            var output = Program.RunCommand(airportPath, "-I");
+            var ports = Program.RunCommand("networksetup", "-listallhardwareports");
+            var wifiDevice = FindDeviceForHardwarePort(ports, "Wi-Fi")
+                          ?? FindDeviceForHardwarePort(ports, "AirPort");
 
-            // If you're not on Wi-Fi, output may be sparse
-            var ssid = FindValueAfterColon(output, "SSID");
-            var rssiStr = FindValueAfterColon(output, "agrCtlRSSI");
-            var noiseStr = FindValueAfterColon(output, "agrCtlNoise");
+            info.InterfaceName = wifiDevice;
 
-            info.IsAvailable = !string.IsNullOrWhiteSpace(ssid);
-
-            info.Ssid = ssid;
-
-            if (int.TryParse(rssiStr, out var rssi))
+            if (string.IsNullOrWhiteSpace(wifiDevice))
             {
-                info.RssiDbm = rssi;
-                info.SignalPercent = RssiToPercent(rssi);
+                info.IsAvailable = false;
+                info.Notes = "Could not find Wi-Fi device (networksetup).";
+                return info;
             }
 
-            if (int.TryParse(noiseStr, out var noise))
-                info.NoiseDbm = noise;
+            var ssidOut = Program.RunCommand("networksetup", $"-getairportnetwork {wifiDevice}");
+            var ssid = ParseMacSsidFromNetworksetup(ssidOut);
+
+            info.Ssid = ssid;
+            info.IsAvailable = !string.IsNullOrWhiteSpace(ssid);
+
+            TryFillRssiFromAirport(info);
 
             return info;
         }
@@ -62,7 +60,70 @@ public static class WifiCollector
         }
     }
 
-    // -------- Windows --------
+    private static string? FindDeviceForHardwarePort(string text, string portName)
+    {
+        var lines = text.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].StartsWith("Hardware Port:", StringComparison.OrdinalIgnoreCase) &&
+                lines[i].IndexOf(portName, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                for (int j = i; j < Math.Min(i + 6, lines.Length); j++)
+                {
+                    if (lines[j].StartsWith("Device:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var parts = lines[j].Split(':', 2);
+                        if (parts.Length == 2) return parts[1].Trim();
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static string? ParseMacSsidFromNetworksetup(string text)
+    {
+        var idx = text.IndexOf("Current Wi-Fi Network:", StringComparison.OrdinalIgnoreCase);
+        if (idx < 0) return null;
+
+        var line = text.Substring(idx).Split('\n')[0].Trim();
+        var parts = line.Split(':', 2);
+        if (parts.Length < 2) return null;
+
+        var value = parts[1].Trim();
+        if (value.Equals("none", StringComparison.OrdinalIgnoreCase)) return null;
+        return value;
+    }
+
+    private static void TryFillRssiFromAirport(Program.WifiInfo info)
+    {
+        try
+        {
+            var airportPath =
+                "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport";
+
+            var output = Program.RunCommand(airportPath, "-I");
+
+            var rssiStr = FindValueAfterColon(output, "agrCtlRSSI");
+            var noiseStr = FindValueAfterColon(output, "agrCtlNoise");
+
+            if (int.TryParse(rssiStr, out var rssi))
+            {
+                info.RssiDbm = rssi;
+                info.SignalPercent = RssiToPercent(rssi);
+            }
+
+            if (int.TryParse(noiseStr, out var noise))
+                info.NoiseDbm = noise;
+        }
+        catch
+        {
+        }
+    }
+
+
     private static Program.WifiInfo GetWindowsWifiInfo()
     {
         var info = new Program.WifiInfo { Source = "Windows:netsh wlan show interfaces" };
@@ -90,7 +151,6 @@ public static class WifiCollector
 
             if (!string.IsNullOrWhiteSpace(signalStr))
             {
-                // "87%" -> 87
                 var digits = new string(signalStr.Where(char.IsDigit).ToArray());
                 if (int.TryParse(digits, out var pct))
                     info.SignalPercent = pct;
