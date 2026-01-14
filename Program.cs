@@ -14,6 +14,10 @@ using System.Collections.Generic;
 
 public class Program
 {
+
+    static double? _lastCpuPct;
+    static double? _lastRamPct;
+
     static void Main()
     {
         var report = new StringBuilder();
@@ -32,6 +36,8 @@ public class Program
         PrintStorageInfo(Log);
         PrintNetworkInfo(Log);
         PrintBatteryInfo(Log);
+        PrintHealthScore(Log);
+
 
 
         Log();
@@ -49,6 +55,8 @@ public class Program
         public NetworkInfo Network { get; set; } = new();
         public BatteryInfo Battery { get; set; } = new();
         public StorageInfo Storage { get; set; } = new();
+        public HealthSummary Health { get; set; } = new();
+
 
 
     }
@@ -158,6 +166,30 @@ public class Program
         public string? HealthStatus { get; set; }
     }
 
+    public enum HealthLevel
+    {
+        Green,
+        Yellow,
+        Red,
+        Unknown
+    }
+
+    public class HealthItem
+    {
+        public string Name { get; set; } = "";
+        public HealthLevel Level { get; set; } = HealthLevel.Unknown;
+        public int Score { get; set; } // 0-100
+        public string Message { get; set; } = "";
+    }
+
+    public class HealthSummary
+    {
+        public int OverallScore { get; set; }
+        public HealthLevel OverallLevel { get; set; } = HealthLevel.Unknown;
+        public List<HealthItem> Items { get; set; } = new();
+    }
+
+
 
     class PingResults
     {
@@ -170,6 +202,9 @@ public class Program
         var uptime = GetSystemUptime();
         var battery = BatteryCollector.GetBatteryInfo();
         var storage = SsdCollector.GetStorageInfo();
+        var network = BuildNetworkInfo();
+        var health = BuildHealthSummary();
+
 
 
 
@@ -197,7 +232,6 @@ public class Program
             })
             .ToList();
 
-        var network = BuildNetworkInfo();
 
         return new DiagnosticReport
         {
@@ -207,7 +241,8 @@ public class Program
             Disks = disks,
             Network = network,
             Battery = battery,
-            Storage = storage
+            Storage = storage,
+            Health = health
         };
     }
 
@@ -301,6 +336,46 @@ public class Program
         return result;
     }
 
+    static HealthSummary BuildHealthSummary()
+    {
+        var items = new List<HealthItem>();
+
+        var cpuPct = _lastCpuPct;
+        var ramPct = _lastRamPct;
+
+
+        items.Add(ScoreCpu(cpuPct));
+        items.Add(ScoreRam(ramPct));
+
+        items.Add(ScoreDiskFree());
+
+        items.Add(ScoreNetwork());
+
+        var wifi = WifiCollector.GetWifiInfo();
+        items.Add(ScoreWifi(wifi));
+
+        var batt = BatteryCollector.GetBatteryInfo();
+        items.Add(ScoreBattery(batt));
+
+        var scored = items.Where(i => i.Level != HealthLevel.Unknown).ToList();
+        var overallScore = scored.Count > 0 ? (int)Math.Round(scored.Average(i => i.Score)) : 0;
+
+        var overallLevel = overallScore switch
+        {
+            >= 80 => HealthLevel.Green,
+            >= 55 => HealthLevel.Yellow,
+            _ => HealthLevel.Red
+        };
+
+        return new HealthSummary
+        {
+            Items = items,
+            OverallScore = overallScore,
+            OverallLevel = scored.Count == 0 ? HealthLevel.Unknown : overallLevel
+        };
+    }
+
+
 
 
 
@@ -358,8 +433,12 @@ public class Program
         Log($".NET Version: {Environment.Version}");
 
         var (cpuPct, ramPct) = PerformanceCollector.GetCpuAndRamUsage();
+        _lastCpuPct = cpuPct;
+        _lastRamPct = ramPct;
+
         if (cpuPct.HasValue) Log($"CPU Usage: {cpuPct.Value:F1}%");
         if (ramPct.HasValue) Log($"RAM Usage: {ramPct.Value:F1}%");
+
 
 
     }
@@ -573,6 +652,21 @@ public class Program
         }
     }
 
+    static void PrintHealthScore(Action<string> Log)
+    {
+        Log("\n== Health Score ==");
+
+        var health = BuildHealthSummary();
+
+        Log($"Overall: {health.OverallScore}/100 ({health.OverallLevel})");
+
+        foreach (var item in health.Items)
+        {
+            Log($"- {item.Name}: {item.Level} ({item.Score}/100) - {item.Message}");
+        }
+    }
+
+
 
     static long ToGb(long bytes) => bytes / 1024 / 1024 / 1024;
 
@@ -733,6 +827,115 @@ public class Program
 
         return Environment.UserName;
     }
+
+    static HealthItem ScoreCpu(double? cpuPct)
+    {
+        if (!cpuPct.HasValue) return Unknown("CPU", "CPU usage not available.");
+
+        var cpu = cpuPct.Value;
+
+        if (cpu < 70) return Green("CPU", 95, $"{cpu:F1}% usage (healthy)");
+        if (cpu < 90) return Yellow("CPU", 70, $"{cpu:F1}% usage (high)");
+        return Red("CPU", 35, $"{cpu:F1}% usage (very high)");
+    }
+
+    static HealthItem ScoreRam(double? ramPct)
+    {
+        if (!ramPct.HasValue) return Unknown("RAM", "RAM usage not available.");
+
+        var ram = ramPct.Value;
+
+        if (ram < 75) return Green("RAM", 95, $"{ram:F1}% used (healthy)");
+        if (ram < 90) return Yellow("RAM", 65, $"{ram:F1}% used (tight)");
+        return Red("RAM", 25, $"{ram:F1}% used (very tight)");
+    }
+
+    static HealthItem ScoreDiskFree()
+    {
+        try
+        {
+            DriveInfo? target = null;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                target = DriveInfo.GetDrives().FirstOrDefault(d => d.IsReady && d.Name.StartsWith("C", StringComparison.OrdinalIgnoreCase));
+            else
+                target = DriveInfo.GetDrives().FirstOrDefault(d => d.IsReady && d.Name == "/");
+
+            if (target == null) return Unknown("Disk", "Could not determine system drive.");
+
+            var freePct = (double)target.AvailableFreeSpace / target.TotalSize * 100.0;
+
+            if (freePct >= 20) return Green("Disk", 95, $"{freePct:F1}% free (healthy)");
+            if (freePct >= 10) return Yellow("Disk", 60, $"{freePct:F1}% free (low)");
+            return Red("Disk", 20, $"{freePct:F1}% free (very low)");
+        }
+        catch
+        {
+            return Unknown("Disk", "Disk score failed.");
+        }
+    }
+
+    static HealthItem ScoreNetwork()
+    {
+        var internet = PingHost("1.1.1.1");
+        var ok = internet.StartsWith("OK", StringComparison.OrdinalIgnoreCase);
+
+        if (ok) return Green("Network", 95, $"Internet ping OK ({internet})");
+        return Red("Network", 15, $"Internet ping failed ({internet})");
+    }
+
+    static HealthItem ScoreWifi(WifiInfo wifi)
+    {
+        if (wifi == null || !wifi.IsAvailable)
+            return Unknown("Wi-Fi", "Wi-Fi not available / not detected.");
+
+        if (wifi.SignalPercent.HasValue)
+        {
+            var s = wifi.SignalPercent.Value;
+            if (s >= 70) return Green("Wi-Fi", 95, $"{wifi.Ssid ?? "(unknown)"} at {s}% (strong)");
+            if (s >= 40) return Yellow("Wi-Fi", 65, $"{wifi.Ssid ?? "(unknown)"} at {s}% (ok)");
+            return Red("Wi-Fi", 25, $"{wifi.Ssid ?? "(unknown)"} at {s}% (weak)");
+        }
+
+        if (wifi.RssiDbm.HasValue)
+        {
+            var r = wifi.RssiDbm.Value;
+            if (r >= -67) return Green("Wi-Fi", 95, $"{wifi.Ssid ?? "(unknown)"} RSSI {r} dBm (strong)");
+            if (r >= -75) return Yellow("Wi-Fi", 65, $"{wifi.Ssid ?? "(unknown)"} RSSI {r} dBm (ok)");
+            return Red("Wi-Fi", 25, $"{wifi.Ssid ?? "(unknown)"} RSSI {r} dBm (weak)");
+        }
+
+        return Unknown("Wi-Fi", "Wi-Fi signal not available.");
+    }
+
+    static HealthItem ScoreBattery(BatteryInfo b)
+    {
+        if (b == null || !b.IsPresent)
+            return Unknown("Battery", "No battery detected.");
+
+
+        var cond = (b.Condition ?? "").Trim();
+
+        if (cond.Equals("Normal", StringComparison.OrdinalIgnoreCase))
+            return Green("Battery", 95, $"Condition: {cond}");
+
+        if (!string.IsNullOrWhiteSpace(cond))
+            return Yellow("Battery", 60, $"Condition: {cond}");
+        return Unknown("Battery", "Battery condition not available.");
+    }
+
+    static HealthItem Green(string name, int score, string msg) =>
+        new HealthItem { Name = name, Level = HealthLevel.Green, Score = score, Message = msg };
+
+    static HealthItem Yellow(string name, int score, string msg) =>
+        new HealthItem { Name = name, Level = HealthLevel.Yellow, Score = score, Message = msg };
+
+    static HealthItem Red(string name, int score, string msg) =>
+        new HealthItem { Name = name, Level = HealthLevel.Red, Score = score, Message = msg };
+
+    static HealthItem Unknown(string name, string msg) =>
+        new HealthItem { Name = name, Level = HealthLevel.Unknown, Score = 0, Message = msg };
+
 
 
 
