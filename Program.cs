@@ -29,6 +29,7 @@ public class Program
 
         PrintBasicSystemInfo(Log);
         PrintDiskInfo(Log);
+        PrintStorageInfo(Log);
         PrintNetworkInfo(Log);
         PrintBatteryInfo(Log);
 
@@ -47,6 +48,8 @@ public class Program
         public List<DiskInfo> Disks { get; set; } = new();
         public NetworkInfo Network { get; set; } = new();
         public BatteryInfo Battery { get; set; } = new();
+        public StorageInfo Storage { get; set; } = new();
+
 
     }
 
@@ -129,6 +132,31 @@ public class Program
         public string? Notes { get; set; }
     }
 
+    public class StorageInfo
+    {
+        public bool IsAvailable { get; set; }
+        public List<PhysicalDiskInfo> Disks { get; set; } = new();
+        public string? Source { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    public class PhysicalDiskInfo
+    {
+        public string? Name { get; set; }
+        public string? Model { get; set; }
+        public string? Serial { get; set; }
+
+        public bool? IsSsd { get; set; }
+
+        public string? CapacityText { get; set; }
+        public string? SmartStatus { get; set; }
+        public string? TrimSupport { get; set; }
+
+        public long? CapacityBytes { get; set; }
+        public string? MediumType { get; set; }
+        public string? InterfaceType { get; set; }
+        public string? HealthStatus { get; set; }
+    }
 
 
     class PingResults
@@ -141,6 +169,8 @@ public class Program
     {
         var uptime = GetSystemUptime();
         var battery = BatteryCollector.GetBatteryInfo();
+        var storage = SsdCollector.GetStorageInfo();
+
 
 
         var system = new SystemInfo
@@ -176,7 +206,8 @@ public class Program
             System = system,
             Disks = disks,
             Network = network,
-            Battery = battery
+            Battery = battery,
+            Storage = storage
         };
     }
 
@@ -497,6 +528,50 @@ public class Program
         if (b.DesignCapacitymAh.HasValue) Log($"Design Capacity: {b.DesignCapacitymAh.Value} mAh");
     }
 
+    static void PrintStorageInfo(Action<string> Log)
+    {
+        Log("\n== Storage (Physical Disks) ==");
+
+        var s = SsdCollector.GetStorageInfo();
+
+        if (!s.IsAvailable)
+        {
+            Log("Storage: (not available)");
+            if (!string.IsNullOrWhiteSpace(s.Notes))
+                Log($"Notes: {s.Notes}");
+            return;
+        }
+
+        if (s.Disks.Count == 0)
+        {
+            Log("No disks detected.");
+            return;
+        }
+
+        int i = 1;
+        foreach (var d in s.Disks)
+        {
+            Log($"\nDisk {i++}:");
+
+            if (!string.IsNullOrWhiteSpace(d.Name)) Log($"  Name: {d.Name}");
+            if (!string.IsNullOrWhiteSpace(d.Model) && d.Model != d.Name) Log($"  Model: {d.Model}");
+
+            if (d.CapacityBytes.HasValue)
+                Log($"  Size: {d.CapacityBytes.Value / 1024 / 1024 / 1024} GB");
+            else if (!string.IsNullOrWhiteSpace(d.CapacityText))
+                Log($"  Size: {d.CapacityText}");
+
+            if (d.IsSsd.HasValue)
+                Log($"  Type: {(d.IsSsd.Value ? "SSD" : "HDD")}");
+
+            if (!string.IsNullOrWhiteSpace(d.SmartStatus)) Log($"  SMART: {d.SmartStatus}");
+            if (!string.IsNullOrWhiteSpace(d.TrimSupport)) Log($"  TRIM: {d.TrimSupport}");
+
+            if (!string.IsNullOrWhiteSpace(d.InterfaceType)) Log($"  Interface: {d.InterfaceType}");
+            if (!string.IsNullOrWhiteSpace(d.HealthStatus)) Log($"  Health: {d.HealthStatus}");
+            if (!string.IsNullOrWhiteSpace(d.Serial)) Log($"  Serial: {d.Serial}");
+        }
+    }
 
 
     static long ToGb(long bytes) => bytes / 1024 / 1024 / 1024;
