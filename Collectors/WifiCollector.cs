@@ -25,30 +25,53 @@ public static class WifiCollector
 
     private static Program.WifiInfo GetMacWifiInfo()
     {
-        var info = new Program.WifiInfo { Source = "macOS:networksetup (+ airport if available)" };
+        var info = new Program.WifiInfo { Source = "macOS:wdutil info" };
 
         try
         {
-            var ports = Program.RunCommand("networksetup", "-listallhardwareports");
-            var wifiDevice = FindDeviceForHardwarePort(ports, "Wi-Fi")
-                          ?? FindDeviceForHardwarePort(ports, "AirPort");
+            var output = Program.RunCommand("wdutil", "info");
 
-            info.InterfaceName = wifiDevice;
-
-            if (string.IsNullOrWhiteSpace(wifiDevice))
+            if (output.IndexOf("usage:", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                output.IndexOf("sudo wdutil info", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 info.IsAvailable = false;
-                info.Notes = "Could not find Wi-Fi device (networksetup).";
+                info.Notes = "macOS requires admin privileges for Wi-Fi details. Run: sudo dotnet run";
                 return info;
             }
 
-            var ssidOut = Program.RunCommand("networksetup", $"-getairportnetwork {wifiDevice}");
-            var ssid = ParseMacSsidFromNetworksetup(ssidOut);
+            var wifiSection = ExtractSection(output, "WIFI");
 
+            var iface = FindValueAfterColon(wifiSection, "Interface Name");
+            var ssid = FindValueAfterColon(wifiSection, "SSID");
+            var rssiStr = FindValueAfterColon(wifiSection, "RSSI");     
+            var noiseStr = FindValueAfterColon(wifiSection, "Noise");   
+            var txRateStr = FindValueAfterColon(wifiSection, "Tx Rate");
+            var channel = FindValueAfterColon(wifiSection, "Channel");
+            var phy = FindValueAfterColon(wifiSection, "PHY Mode");
+            var security = FindValueAfterColon(wifiSection, "Security");
+
+            info.InterfaceName = iface;
             info.Ssid = ssid;
+            info.Channel = channel;
+            info.PhyMode = phy;
+            info.Security = security;
+
             info.IsAvailable = !string.IsNullOrWhiteSpace(ssid);
 
-            TryFillRssiFromAirport(info);
+            if (int.TryParse(OnlyInt(rssiStr), out var rssi))
+            {
+                info.RssiDbm = rssi;
+                info.SignalPercent = RssiToPercent(rssi);
+            }
+
+            if (int.TryParse(OnlyInt(noiseStr), out var noise))
+                info.NoiseDbm = noise;
+
+            if (double.TryParse(OnlyDouble(txRateStr), out var tx))
+                info.TxRateMbps = tx;
+
+            if (!info.IsAvailable)
+                info.Notes = "Not connected to Wi-Fi (SSID missing).";
 
             return info;
         }
@@ -59,70 +82,6 @@ public static class WifiCollector
             return info;
         }
     }
-
-    private static string? FindDeviceForHardwarePort(string text, string portName)
-    {
-        var lines = text.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
-
-        for (int i = 0; i < lines.Length; i++)
-        {
-            if (lines[i].StartsWith("Hardware Port:", StringComparison.OrdinalIgnoreCase) &&
-                lines[i].IndexOf(portName, StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                for (int j = i; j < Math.Min(i + 6, lines.Length); j++)
-                {
-                    if (lines[j].StartsWith("Device:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var parts = lines[j].Split(':', 2);
-                        if (parts.Length == 2) return parts[1].Trim();
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private static string? ParseMacSsidFromNetworksetup(string text)
-    {
-        var idx = text.IndexOf("Current Wi-Fi Network:", StringComparison.OrdinalIgnoreCase);
-        if (idx < 0) return null;
-
-        var line = text.Substring(idx).Split('\n')[0].Trim();
-        var parts = line.Split(':', 2);
-        if (parts.Length < 2) return null;
-
-        var value = parts[1].Trim();
-        if (value.Equals("none", StringComparison.OrdinalIgnoreCase)) return null;
-        return value;
-    }
-
-    private static void TryFillRssiFromAirport(Program.WifiInfo info)
-    {
-        try
-        {
-            var airportPath =
-                "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport";
-
-            var output = Program.RunCommand(airportPath, "-I");
-
-            var rssiStr = FindValueAfterColon(output, "agrCtlRSSI");
-            var noiseStr = FindValueAfterColon(output, "agrCtlNoise");
-
-            if (int.TryParse(rssiStr, out var rssi))
-            {
-                info.RssiDbm = rssi;
-                info.SignalPercent = RssiToPercent(rssi);
-            }
-
-            if (int.TryParse(noiseStr, out var noise))
-                info.NoiseDbm = noise;
-        }
-        catch
-        {
-        }
-    }
-
 
     private static Program.WifiInfo GetWindowsWifiInfo()
     {
@@ -146,8 +105,7 @@ public static class WifiCollector
             info.InterfaceName = name;
             info.Ssid = ssid;
 
-            if (!string.IsNullOrWhiteSpace(ssid))
-                info.IsAvailable = true;
+            info.IsAvailable = !string.IsNullOrWhiteSpace(ssid);
 
             if (!string.IsNullOrWhiteSpace(signalStr))
             {
@@ -183,6 +141,43 @@ public static class WifiCollector
 
         return null;
     }
+
+    private static string ExtractSection(string text, string sectionTitle)
+    {
+        var lines = text.Split('\n');
+        int start = -1;
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].Trim().Equals(sectionTitle, StringComparison.OrdinalIgnoreCase))
+            {
+                start = i;
+                break;
+            }
+        }
+
+        if (start < 0) return text;
+
+        var collected = lines.Skip(start).ToList();
+
+        for (int i = 3; i < collected.Count; i++)
+        {
+            var t = collected[i].Trim();
+            if (t.Length > 10 && t.All(c => c == '—' || c == '-' || c == '='))
+            {
+                collected = collected.Take(i).ToList();
+                break;
+            }
+        }
+
+        return string.Join("\n", collected);
+    }
+
+    private static string OnlyInt(string? s)
+        => string.IsNullOrWhiteSpace(s) ? "" : new string(s.Where(c => char.IsDigit(c) || c == '-').ToArray());
+
+    private static string OnlyDouble(string? s)
+        => string.IsNullOrWhiteSpace(s) ? "" : new string(s.Where(c => char.IsDigit(c) || c == '.' || c == '-').ToArray());
 
     private static int RssiToPercent(int rssiDbm)
     {

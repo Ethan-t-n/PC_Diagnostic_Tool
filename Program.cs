@@ -120,6 +120,11 @@ public class Program
         public int? SignalPercent { get; set; }
         public int? RssiDbm { get; set; }
         public int? NoiseDbm { get; set; }
+        public double? TxRateMbps { get; set; }
+        public string? Channel { get; set; }
+        public string? PhyMode { get; set; }
+        public string? Security { get; set; }
+
         public string? Source { get; set; }
         public string? Notes { get; set; }
     }
