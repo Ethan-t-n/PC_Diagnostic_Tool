@@ -27,12 +27,27 @@ When you run the app, it automatically collects:
 
 ---
 
-### 💾 Disk Information
+## 💾 Disk Information
+
+### Logical drives
 For every mounted drive:
 - Drive name  
 - File system  
 - Total space  
-- Free space  
+- Free space
+
+### Physical storage (SSDs / HDDs)
+- Disk name & model  
+- Capacity  
+- SSD vs HDD detection  
+- TRIM support  
+- SMART status (when available)  
+- Interface type  
+- Health status  
+
+Supports:
+- macOS via `diskutil` + `system_profiler`
+- Windows via WMI
 
 ---
 
@@ -53,7 +68,25 @@ Active adapters:
 - Link speed  
 - IP addresses  
 - Gateways  
-- DNS servers  
+- DNS servers
+
+---
+
+## 📡 Wi-Fi (macOS + Windows)
+- SSID  
+- Signal strength (%)  
+- RSSI (dBm)  
+- Noise  
+- Channel  
+- PHY mode  
+- Security type  
+- TX rate  
+
+On macOS, Wi-Fi data requires admin privileges.
+
+Run with:
+
+`sudo dotnet run`
 
 ---
 
@@ -73,6 +106,40 @@ Supports:
 
 ---
 
+## ❤️ Health Score System
+
+Each scan produces a full health report:
+
+| Component | What is evaluated |
+|--------|------------------|
+| CPU | Current usage |
+| RAM | Memory pressure |
+| Disk | Free space on system drive |
+| Network | Internet connectivity |
+| Wi-Fi | Signal strength |
+| Battery | Condition & presence |
+
+Each category gets:
+- Score (0–100)
+- Color status (Green / Yellow / Red / Unknown)
+- Human-readable explanation  
+
+An overall system health score is calculated.
+
+Example output:
+
+| Component | Status | Score | Details |
+|---------|--------|-------|---------|
+| CPU | Green | 95/100 | 35.8% usage (healthy) |
+| RAM | Red | 25/100 | 91% used (very tight) |
+| Disk | Yellow | 60/100 | 15% free (low) |
+| Network | Green | 95/100 | Internet OK |
+| Wi-Fi | Green | 95/100 | Strong signal |
+| Battery | Green | 95/100 | Condition: Normal |
+
+Overall Health: **74/100 (Yellow)**
+
+
 ## 📄 Report Export
 
 Every run generates two reports inside a `/reports` folder:
@@ -89,20 +156,24 @@ reports/pc_diagnostic_YYYYMMDD_HHMMSS.json
 
 The JSON includes:
 
+```json
 {
   "GeneratedAt": "...",
   "MachineName": "...",
   "System": { ... },
   "Disks": [ ... ],
   "Network": { ... },
-  "Battery": { ... }
+  "Battery": { ... },
+  "Health": { ... }
 }
+```
 
 This allows:
 - GUI apps
 - Remote monitoring
 - Health scoring
 - Cloud uploads
+- Trend tracking
 - Future dashboards
 
 ---
@@ -126,7 +197,11 @@ dotnet add package System.Management
 
 ## ▶️ How to Run
 
-dotnet run
+`dotnet run`
+
+For full Wi-Fi access on macOS:
+
+`sudo dotnet run`
 
 After it finishes:
 - View the console output
@@ -140,9 +215,11 @@ This tool is designed to grow into a full professional diagnostic suite.
 
 Planned upgrades:
 - Windows GUI (WPF)
-- Wi-Fi SSID + signal strength
-- Battery health scoring
-- System health grading (green / yellow / red)
+- Historical health tracking
+- CPU thermals
+- Memory pressure metrics
+- Battery wear scoring
+- Wi-Fi quality graphs
 - Performance graphs
 - Save history
 - Export to CSV / PDF
