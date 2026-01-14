@@ -74,6 +74,8 @@ public class Program
     class NetworkInfo
     {
         public string Host { get; set; } = "";
+        public WifiInfo Wifi { get; set; } = new();
+
         public string PrimaryAdapterName { get; set; } = "";
         public string PrimaryAdapterType { get; set; } = "";
         public string? IPv4 { get; set; }
@@ -109,6 +111,19 @@ public class Program
         public string? Source { get; set; }             
         public string? Notes { get; set; }
     }
+
+    public class WifiInfo
+    {
+        public bool IsAvailable { get; set; }
+        public string? InterfaceName { get; set; }
+        public string? Ssid { get; set; }
+        public int? SignalPercent { get; set; }
+        public int? RssiDbm { get; set; }
+        public int? NoiseDbm { get; set; }
+        public string? Source { get; set; }
+        public string? Notes { get; set; }
+    }
+
 
 
     class PingResults
@@ -166,6 +181,9 @@ public class Program
         {
             Host = Dns.GetHostName()
         };
+
+        result.Wifi = WifiCollector.GetWifiInfo();
+
 
         var activeAdapters = NetworkInterface.GetAllNetworkInterfaces()
             .Where(nic => nic.OperationalStatus == OperationalStatus.Up)
@@ -330,6 +348,25 @@ public class Program
         Log("\n== Network Info ==");
 
         Log($"Host: {Dns.GetHostName()}");
+
+        var wifi = BuildNetworkInfo().Wifi;
+        if (wifi.IsAvailable)
+        {
+            Log($"Wi-Fi SSID: {wifi.Ssid ?? "(unknown)"}");
+
+            if (wifi.SignalPercent.HasValue)
+                Log($"Wi-Fi Signal: {wifi.SignalPercent.Value}%");
+
+            if (wifi.RssiDbm.HasValue)
+                Log($"Wi-Fi RSSI: {wifi.RssiDbm.Value} dBm");
+        }
+        else
+        {
+            Log("Wi-Fi: (not connected or not available)");
+            if (!string.IsNullOrWhiteSpace(wifi.Notes))
+                Log($"Wi-Fi Notes: {wifi.Notes}");
+        }
+
 
         var activeAdapters = NetworkInterface.GetAllNetworkInterfaces()
         .Where(nic => nic.OperationalStatus == OperationalStatus.Up)
