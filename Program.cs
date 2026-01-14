@@ -309,7 +309,7 @@ public class Program
         Log($"OS: {RuntimeInformation.OSDescription}");
         Log($"Architecture: {RuntimeInformation.OSArchitecture}");
         Log($"Machine Name: {Environment.MachineName}");
-        Log($"User: {Environment.UserName}");
+        Log($"User: {GetDisplayUserName()}");
         Log($"CPU Cores: {Environment.ProcessorCount}");
 
         var cpuModel = GetCpuModel();
@@ -641,6 +641,24 @@ public class Program
         var bootTime = DateTime.Now - uptime;
         return bootTime.ToString("yyyy-MM-dd HH:mm:ss");
     }
+
+    static string GetDisplayUserName()
+    {
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                // When running with sudo, SUDO_USER is usually the original user
+                var sudoUser = Environment.GetEnvironmentVariable("SUDO_USER");
+                if (!string.IsNullOrWhiteSpace(sudoUser))
+                    return sudoUser;
+            }
+        }
+        catch { }
+
+        return Environment.UserName;
+    }
+
 
 
 }
