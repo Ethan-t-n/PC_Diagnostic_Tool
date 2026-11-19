@@ -479,7 +479,10 @@ public class Program
         var wifi = BuildNetworkInfo().Wifi;
         if (wifi.IsAvailable)
         {
+            Log($"Wi-Fi: {(string.IsNullOrWhiteSpace(wifi.Ssid) ? "Wireless adapter active (SSID unknown)" : "Connected")}");
             Log($"Wi-Fi SSID: {wifi.Ssid ?? "(unknown)"}");
+            if (!string.IsNullOrWhiteSpace(wifi.Notes))
+                Log($"Wi-Fi Notes: {wifi.Notes}");
 
             if (wifi.SignalPercent.HasValue)
                 Log($"Wi-Fi Signal: {wifi.SignalPercent.Value}%");
@@ -489,7 +492,7 @@ public class Program
         }
         else
         {
-            Log("Wi-Fi: (not connected or not available)");
+            Log("Wi-Fi: (connection status unknown)");
             if (!string.IsNullOrWhiteSpace(wifi.Notes))
                 Log($"Wi-Fi Notes: {wifi.Notes}");
         }
@@ -913,7 +916,7 @@ public class Program
     static HealthItem ScoreWifi(WifiInfo wifi)
     {
         if (wifi == null || !wifi.IsAvailable)
-            return Unknown("Wi-Fi", "Wi-Fi not available / not detected.");
+            return Unknown("Wi-Fi", "Wi-Fi connection not confirmed.");
 
         if (wifi.SignalPercent.HasValue)
         {
@@ -931,7 +934,7 @@ public class Program
             return Red("Wi-Fi", 25, $"{wifi.Ssid ?? "(unknown)"} RSSI {r} dBm (weak)");
         }
 
-        return Unknown("Wi-Fi", "Wi-Fi signal not available.");
+        return Unknown("Wi-Fi", "Wireless adapter active; signal strength unavailable (not scored).");
     }
 
     static HealthItem ScoreBattery(BatteryInfo b)
