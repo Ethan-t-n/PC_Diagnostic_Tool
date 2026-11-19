@@ -62,8 +62,10 @@ public static class BatteryCollector
 
             info.CycleCount = TryParseIntAfterLabel(sp, "Cycle Count");
             info.Condition = TryParseStringAfterLabel(sp, "Condition");
-            info.FullChargeCapacitymAh = TryParseIntAfterLabel(sp, "Full Charge Capacity");
-            info.DesignCapacitymAh = TryParseIntAfterLabel(sp, "Design Capacity");
+            // system_profiler may report a percentage rather than a capacity in mAh.
+            // Never present "100%" as "100 mAh".
+            info.FullChargeCapacitymAh = TryParseCapacityMah(sp, "Full Charge Capacity");
+            info.DesignCapacitymAh = TryParseCapacityMah(sp, "Design Capacity");
 
             return info;
         }
@@ -119,6 +121,29 @@ public static class BatteryCollector
         }
 #pragma warning restore CA1416
     }
+    private static int? TryParseCapacityMah(string text, string label)
+    {
+        foreach (var raw in text.Split('\n'))
+        {
+            var line = raw.Trim();
+            if (!line.StartsWith(label, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var colon = line.IndexOf(':');
+            if (colon < 0) continue;
+
+            var value = line.Substring(colon + 1).Trim();
+            // Do not confuse charge percentage with milliamp-hours.
+            if (!value.Contains("mAh", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            var numeric = value.Replace("mAh", "", StringComparison.OrdinalIgnoreCase).Trim();
+            if (int.TryParse(numeric, out var capacity) && capacity > 0)
+                return capacity;
+        }
+        return null;
+    }
+
     private static int? TryParseIntAfterLabel(string text, string label)
     {
         var idx = text.IndexOf(label, StringComparison.OrdinalIgnoreCase);
