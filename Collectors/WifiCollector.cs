@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 
 public static class WifiCollector
@@ -26,6 +27,19 @@ public static class WifiCollector
     private static Program.WifiInfo GetMacWifiInfo()
     {
         var info = new Program.WifiInfo { Source = "macOS:wdutil info" };
+        // This is a network-link observation, not a Wi-Fi signal measurement.
+        var activeWireless = NetworkInterface.GetAllNetworkInterfaces().FirstOrDefault(nic =>
+            nic.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 &&
+            nic.OperationalStatus == OperationalStatus.Up &&
+            nic.GetIPProperties().UnicastAddresses.Any(a =>
+                !System.Net.IPAddress.IsLoopback(a.Address) &&
+                a.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork));
+        if (activeWireless != null)
+        {
+            info.IsAvailable = true;
+            info.InterfaceName = activeWireless.Name;
+            info.Notes = "Wireless adapter is active with an IPv4 address; SSID and signal strength require additional access.";
+        }
 
         try
         {
@@ -34,8 +48,8 @@ public static class WifiCollector
             if (output.IndexOf("usage:", StringComparison.OrdinalIgnoreCase) >= 0 &&
                 output.IndexOf("sudo wdutil info", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                info.IsAvailable = false;
-                info.Notes = "macOS requires admin privileges for Wi-Fi details. Run: sudo dotnet run";
+                if (!info.IsAvailable)
+                    info.Notes = "Wi-Fi details require additional permissions; wireless connection not confirmed.";
                 return info;
             }
 
@@ -56,7 +70,7 @@ public static class WifiCollector
             info.PhyMode = phy;
             info.Security = security;
 
-            info.IsAvailable = !string.IsNullOrWhiteSpace(ssid);
+            info.IsAvailable = info.IsAvailable || !string.IsNullOrWhiteSpace(ssid);
 
             if (int.TryParse(OnlyInt(rssiStr), out var rssi))
             {
@@ -71,14 +85,17 @@ public static class WifiCollector
                 info.TxRateMbps = tx;
 
             if (!info.IsAvailable)
-                info.Notes = "Not connected to Wi-Fi (SSID missing).";
+                info.Notes = "Wi-Fi connection not confirmed (SSID unavailable and no active wireless adapter detected).";
+            else if (!string.IsNullOrWhiteSpace(ssid))
+                info.Notes = null;
 
             return info;
         }
         catch (Exception ex)
         {
-            info.IsAvailable = false;
-            info.Notes = $"macOS Wi-Fi query error: {ex.GetType().Name}";
+            info.Notes = info.IsAvailable
+                ? $"Wireless adapter active; detailed query unavailable ({ex.GetType().Name})."
+                : $"macOS Wi-Fi query error: {ex.GetType().Name}";
             return info;
         }
     }
