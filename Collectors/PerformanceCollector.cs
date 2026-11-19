@@ -73,6 +73,26 @@ public static class PerformanceCollector
         }
     }
 
+    public static int? GetMacSystemWideFreeMemoryPercent()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return null;
+        try
+        {
+            var output = Program.RunCommand("memory_pressure", "");
+            const string label = "System-wide memory free percentage:";
+            foreach (var line in output.Split('\n'))
+            {
+                var idx = line.IndexOf(label, StringComparison.OrdinalIgnoreCase);
+                if (idx < 0) continue;
+                var value = line.Substring(idx + label.Length).Trim().TrimEnd('%').Trim();
+                if (int.TryParse(value, out var percent) && percent >= 0 && percent <= 100)
+                    return percent;
+            }
+        }
+        catch { }
+        return null;
+    }
+
     private static double? ParseMacCpuPercent(string text)
     {
         var idx = text.IndexOf("CPU usage:");

@@ -66,35 +66,66 @@ public static class SsdCollector
     private static void ParseSystemProfilerDisks(string text, List<Program.PhysicalDiskInfo> disks, bool assumeSsd)
     {
         Program.PhysicalDiskInfo? current = null;
+        int currentIndent = -1;
+        int? volumesIndent = null;
+
+        void FinishDevice()
+        {
+            // Device-level properties distinguish a physical disk from an
+            // APFS volume, container, controller heading, or partition.
+            if (current != null &&
+                (!string.IsNullOrWhiteSpace(current.Model) ||
+                 !string.IsNullOrWhiteSpace(current.TrimSupport) ||
+                 !string.IsNullOrWhiteSpace(current.SmartStatus) ||
+                 !string.IsNullOrWhiteSpace(current.MediumType) ||
+                 (!string.IsNullOrWhiteSpace(current.CapacityText) &&
+                  current.Name?.Contains("SSD", StringComparison.OrdinalIgnoreCase) == true)))
+            {
+                disks.Add(current);
+            }
+            current = null;
+        }
 
         foreach (var raw in text.Split('\n'))
         {
             var line = raw.TrimEnd('\r');
-
             var trimmed = line.Trim();
-            // Only top-level device headers belong in the physical disk list.
-            // Nested "Volumes", partitions and APFS containers are not disks.
+            if (trimmed.Length == 0) continue;
             var indent = line.Length - line.TrimStart(' ').Length;
+
+            // system_profiler nests APFS volumes under "Volumes:".
+            // Never interpret those nested headers as physical devices.
+            if (volumesIndent.HasValue)
+            {
+                if (indent > volumesIndent.Value) continue;
+                volumesIndent = null;
+            }
+
             var isHeader =
-                trimmed.EndsWith(":") &&
-                !trimmed.Contains(": ") &&
-                trimmed.Length > 2 &&
-                indent == 6;          
+                trimmed.EndsWith(":", StringComparison.Ordinal) &&
+                !trimmed.Contains(": ", StringComparison.Ordinal) &&
+                indent >= 4;
 
             if (isHeader)
             {
-                if (current != null) disks.Add(current);
+                FinishDevice();
+
+                if (trimmed.Equals("Volumes:", StringComparison.OrdinalIgnoreCase))
+                {
+                    volumesIndent = indent;
+                    continue;
+                }
 
                 current = new Program.PhysicalDiskInfo
                 {
                     Name = trimmed.TrimEnd(':').Trim(),
                     IsSsd = assumeSsd
                 };
+                currentIndent = indent;
                 continue;
             }
 
-            if (current == null) continue;
-
+            if (current == null || indent <= currentIndent) continue;
             var parts = trimmed.Split(':', 2);
             if (parts.Length != 2) continue;
 
@@ -103,34 +134,25 @@ public static class SsdCollector
 
             if (key.Equals("Model", StringComparison.OrdinalIgnoreCase))
                 current.Model = val;
-
             else if (key.Equals("Capacity", StringComparison.OrdinalIgnoreCase))
                 current.CapacityText = val;
-
             else if (key.Equals("SMART Status", StringComparison.OrdinalIgnoreCase))
                 current.SmartStatus = val;
-
             else if (key.Equals("TRIM Support", StringComparison.OrdinalIgnoreCase))
                 current.TrimSupport = val;
-
             else if (key.Equals("Medium Type", StringComparison.OrdinalIgnoreCase))
             {
                 current.MediumType = val;
-                if (val.IndexOf("SSD", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    val.IndexOf("Solid State", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
+                if (val.Contains("SSD", StringComparison.OrdinalIgnoreCase) ||
+                    val.Contains("Solid State", StringComparison.OrdinalIgnoreCase))
                     current.IsSsd = true;
-                }
-                else if (val.IndexOf("HDD", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                         val.IndexOf("Hard Disk", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
+                else if (val.Contains("HDD", StringComparison.OrdinalIgnoreCase) ||
+                         val.Contains("Hard Disk", StringComparison.OrdinalIgnoreCase))
                     current.IsSsd = false;
-                }
             }
         }
 
-        if (current != null)
-            disks.Add(current);
+        FinishDevice();
     }
 
     [SupportedOSPlatform("windows")]

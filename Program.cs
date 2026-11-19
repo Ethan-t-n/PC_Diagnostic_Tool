@@ -841,10 +841,24 @@ public class Program
 
     static HealthItem ScoreRam(double? ramPct)
     {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            var free = PerformanceCollector.GetMacSystemWideFreeMemoryPercent();
+            if (!free.HasValue)
+                return Unknown("RAM", "macOS memory pressure information unavailable; occupancy alone is not a reliable health score.");
+
+            // Apple's system-wide free memory percentage is not the same as
+            // the percentage of physically unused RAM. These are indicative
+            // bands, not a diagnosis of current swap or application performance.
+            var msg = $"macOS system-wide free memory: {free.Value}% (memory_pressure)";
+            if (free.Value >= 30) return Green("RAM", 95, msg);
+            if (free.Value >= 10) return Yellow("RAM", 65, msg);
+            return Red("RAM", 25, msg);
+        }
+
         if (!ramPct.HasValue) return Unknown("RAM", "RAM usage not available.");
 
         var ram = ramPct.Value;
-
         if (ram < 75) return Green("RAM", 95, $"{ram:F1}% used (healthy)");
         if (ram < 90) return Yellow("RAM", 65, $"{ram:F1}% used (tight)");
         return Red("RAM", 25, $"{ram:F1}% used (very tight)");
