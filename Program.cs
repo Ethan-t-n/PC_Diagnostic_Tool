@@ -222,7 +222,7 @@ public class Program
         };
 
         var disks = DriveInfo.GetDrives()
-            .Where(d => d.IsReady)
+            .Where(d => d.IsReady && ShouldDisplayVolume(d))
             .Select(d => new DiskInfo
             {
                 Name = d.Name,
@@ -443,13 +443,25 @@ public class Program
 
     }
 
+    static bool ShouldDisplayVolume(DriveInfo drive)
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return true;
+
+        // APFS system, recovery and virtual mounts share the same container
+        // and should not appear as separate user-facing disks.
+        if (drive.Name == "/") return true;
+        if (drive.Name.StartsWith("/System/Volumes/", StringComparison.Ordinal)) return false;
+        if (drive.Name == "/dev") return false;
+        return drive.TotalSize > 0;
+    }
+
     static void PrintDiskInfo(Action<string> Log)
     {
         Log("\n== Disk Info ==");
 
         foreach (var drive in DriveInfo.GetDrives())
         {
-            if (!drive.IsReady) continue;
+            if (!drive.IsReady || !ShouldDisplayVolume(drive)) continue;
 
             Log($"Drive: {drive.Name}");
             Log($"  Format: {drive.DriveFormat}");
