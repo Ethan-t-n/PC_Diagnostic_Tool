@@ -1,6 +1,8 @@
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+// Resolve paths relative to this project even when started from the repository root.
+builder.WebHost.UseContentRoot(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..")));
 builder.WebHost.UseUrls("http://127.0.0.1:5000");
 var app = builder.Build();
 app.UseDefaultFiles();
