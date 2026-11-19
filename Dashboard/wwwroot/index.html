@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PC Diagnostic — Local Dashboard</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-icon">▣</span><div><strong>PC Diagnostic</strong><small>Local Health Dashboard</small></div></div>
+      <nav aria-label="Dashboard navigation"><a class="selected" href="#overview">◈ &nbsp; Overview</a><a href="#components">▤ &nbsp; Components</a><a href="#details">ⓘ &nbsp; System Details</a><a href="#reports">▧ &nbsp; Reports</a></nav>
+      <div class="sidebar-bottom"><span class="dot"></span> Local only <small>127.0.0.1:5000</small></div>
+    </aside>
+    <main id="overview">
+      <header><div><p class="eyebrow">SYSTEM MONITORING</p><h1>System Health <span class="chip">Diagnostic snapshot</span></h1><p class="muted" id="machine">Loading your most recent scan…</p></div><button id="refresh" type="button">↻ &nbsp; Reload report</button></header>
+      <div id="error" role="status" class="notice hidden"></div>
+      <div class="hero">
+        <section class="panel score-panel"><div class="score-ring" id="ring"><div><strong id="overall">—</strong><small>/100</small></div></div><div class="score-copy"><p class="eyebrow">OVERALL HEALTH</p><h2 id="overall-label">Waiting for scan</h2><p class="muted">Calculated by your existing C# diagnostic engine.</p><div id="warning" class="warning hidden"></div></div></section>
+        <section class="panel machine-panel"><p class="section-heading">SYSTEM INFORMATION</p><dl id="system-facts"></dl></section>
+      </div>
+      <div class="section-title" id="components"><h2>Hardware overview</h2><span class="muted">Last recorded values · not live sensors</span></div>
+      <div class="metrics" id="metrics"></div>
+      <div class="lower">
+        <section class="panel"><div class="panel-heading"><h2>Component health</h2><span class="muted">Scores from latest scan</span></div><div id="health-bars"></div></section>
+        <section class="panel" id="details"><div class="panel-heading"><h2>Network & hardware</h2></div><dl id="detail-facts"></dl></section>
+      </div>
+      <section class="panel report-panel" id="reports"><div><h2>Diagnostic report</h2><p class="muted" id="timestamp">Waiting for scan…</p><p class="muted" id="report-file"></p></div><button id="download" type="button" disabled>Download JSON</button></section>
+      <footer>Private local dashboard · Values reflect the last completed scan, not continuous monitoring. Run the CLI again to generate a newer report.</footer>
+    </main>
+  </div>
+  <script src="/app.js" defer></script>
+</body>
+</html>
