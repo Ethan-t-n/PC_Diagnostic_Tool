@@ -72,11 +72,14 @@ public static class SsdCollector
             var line = raw.TrimEnd('\r');
 
             var trimmed = line.Trim();
+            // Only top-level device headers belong in the physical disk list.
+            // Nested "Volumes", partitions and APFS containers are not disks.
+            var indent = line.Length - line.TrimStart(' ').Length;
             var isHeader =
                 trimmed.EndsWith(":") &&
-                !trimmed.Contains(": ") &&        
+                !trimmed.Contains(": ") &&
                 trimmed.Length > 2 &&
-                raw.StartsWith("      ");          
+                indent == 6;          
 
             if (isHeader)
             {
