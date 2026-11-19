@@ -165,8 +165,8 @@ public static class SsdCollector
                     var mediaType = TryInt(obj["MediaType"]);
                     disk.MediumType = mediaType?.ToString();
 
-                    if (mediaType == 3) disk.IsSsd = true;
-                    else if (mediaType == 4) disk.IsSsd = false;
+                    if (mediaType == 3) disk.IsSsd = false; // HDD
+                    else if (mediaType == 4) disk.IsSsd = true; // SSD
 
                     info.Disks.Add(disk);
                 }
