@@ -82,10 +82,13 @@
           <div><span class="muted">Battery condition</span><strong id="battery-condition">—</strong></div>
           <div><span class="muted">Cycle count</span><strong id="battery-cycles">—</strong></div>
         </div>
-        <div class="track battery-track" role="progressbar" id="battery-progress" aria-label="Battery charge" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill good" id="battery-fill"></div></div>
+        <div class="battery-meter-heading"><strong>Current battery charge</strong><span id="battery-charge-label">—</span></div>
+        <div class="track battery-track" role="progressbar" id="battery-progress" aria-label="Current battery charge" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill good" id="battery-fill"></div></div>
         <p class="muted" id="battery-status-note"></p>
         <h3>Capacity and estimated health</h3>
         <dl id="battery-facts"></dl>
+        <div class="battery-meter-heading"><strong>Estimated battery health</strong><span id="battery-health-label">—</span></div>
+        <div class="track battery-track" role="progressbar" id="battery-health-progress" aria-label="Estimated battery health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill battery-health-fill" id="battery-health-fill"></div></div>
         <p class="muted">Battery readings come from the latest completed scan. Estimated battery health is full-charge capacity divided by design capacity, only when both capacities are reported in mAh. Charge level is not the same as battery health. Some platforms do not provide capacity or condition details.</p>
       </section>
       <div class="section-title" id="components"><h2>Hardware overview</h2><span class="muted">Last recorded values · not live sensors</span></div>
