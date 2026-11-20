@@ -7,7 +7,7 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     Args = args,
     ContentRootPath = dashboardRoot
 });
-builder.WebHost.UseUrls("http://127.0.0.1:5000");
+builder.WebHost.UseUrls("http://127.0.0.1:5050");
 var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
