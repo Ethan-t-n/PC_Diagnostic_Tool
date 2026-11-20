@@ -92,10 +92,7 @@ function render(report, file) {
     ['Adapter type', network.PrimaryAdapterType],
     ['Local IPv4 address', network.IPv4],
     ['Default gateway', network.Gateway],
-    ['Wi-Fi network (SSID)', network.Wifi?.Ssid]
-  ]);
-  facts('network-pings',[
-    ['Internet ping result', network.Pings?.InternetPing]
+    ['Wi-Fi network (SSID)', network.Wifi?.Ssid || (network.Wifi?.Notes?.includes('SSID restricted by macOS') ? 'Restricted by macOS' : 'Unknown')]
   ]);
   facts('memory-facts',[['Installed physical RAM',bytes(sys.RamBytes)],['Live measurement','macOS memory_pressure free percentage'],['Memory health',fmt((health.Items??[]).find(i=>i.Name==='RAM')?.Message)]]);
   facts('cpu-facts',[['Processor',sys.CpuModel],['Logical CPU count',sys.CpuCores],['Architecture',sys.Architecture]]);
