@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Text.RegularExpressions;
 
 public static class BatteryCollector
 {
@@ -67,6 +68,16 @@ public static class BatteryCollector
             info.FullChargeCapacitymAh = TryParseCapacityMah(sp, "Full Charge Capacity");
             info.DesignCapacitymAh = TryParseCapacityMah(sp, "Design Capacity");
 
+            // Use raw mAh readings, not percentage-style capacity values from system_profiler.
+            var registry = Program.RunCommand("ioreg", "-r -c AppleSmartBattery -w 0");
+            var design = TryParseIoregInteger(registry, "DesignCapacity");
+            var rawFull = TryParseIoregInteger(registry, "AppleRawMaxCapacity");
+            // Only report capacities when both comparable raw values are available.
+            info.DesignCapacitymAh = design;
+            info.FullChargeCapacitymAh = design.HasValue && rawFull.HasValue ? rawFull : null;
+            if (!info.FullChargeCapacitymAh.HasValue)
+                info.DesignCapacitymAh = null;
+
             return info;
         }
         catch (Exception ex)
@@ -121,6 +132,16 @@ public static class BatteryCollector
         }
 #pragma warning restore CA1416
     }
+    private static int? TryParseIoregInteger(string text, string key)
+    {
+        // Match property lines only, excluding values embedded in BatteryData.
+        var pattern = "^\\s*\\\"" + Regex.Escape(key) + "\\\"\\s*=\\s*(\\d+)\\s*$";
+        var match = Regex.Match(text, pattern, RegexOptions.Multiline);
+        return match.Success && int.TryParse(match.Groups[1].Value, out var value) && value > 0
+            ? value
+            : null;
+    }
+
     private static int? TryParseCapacityMah(string text, string label)
     {
         foreach (var raw in text.Split('\n'))
