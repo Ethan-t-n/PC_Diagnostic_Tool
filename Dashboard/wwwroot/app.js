@@ -105,6 +105,12 @@ function render(report, file) {
   $('battery-condition').textContent = batteryPresent ? fmt(battery.Condition, 'Unknown') : 'N/A';
   $('battery-cycles').textContent = batteryPresent && Number.isInteger(battery.CycleCount) && battery.CycleCount >= 0 ? String(battery.CycleCount) : 'N/A';
   $('battery-fill').style.width = charge === null ? '0%' : pct(charge) + '%';
+  $('battery-charge-label').textContent = charge === null ? 'N/A' : charge + '%';
+  const healthLabel = batteryHealth === null ? 'N/A' : batteryHealth.toFixed(1) + '%';
+  $('battery-health-label').textContent = healthLabel;
+  $('battery-health-fill').style.width = batteryHealth === null ? '0%' : pct(batteryHealth) + '%';
+  $('battery-health-progress').setAttribute('aria-valuenow', batteryHealth === null ? '0' : String(pct(batteryHealth)));
+  $('battery-health-progress').setAttribute('aria-valuetext', batteryHealth === null ? 'Estimated battery health unavailable' : healthLabel + ' estimated battery health');
   $('battery-progress').setAttribute('aria-valuenow', charge === null ? '0' : String(charge));
   $('battery-progress').setAttribute('aria-valuetext', charge === null ? 'Battery charge unavailable' : charge + '% charged');
   $('battery-status-note').textContent = batteryPresent ? 'Battery detected.' : fmt(battery.Notes, 'No battery detected or battery data unavailable.');
