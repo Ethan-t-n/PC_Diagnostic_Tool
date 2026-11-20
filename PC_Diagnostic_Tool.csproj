@@ -7,6 +7,11 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!-- Keep the separate ASP.NET Core app out of the CLI compilation. -->
+  <ItemGroup>
+    <Compile Remove="Dashboard/**/*.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.1" />
     <PackageReference Include="System.Management" Version="10.0.1" />
