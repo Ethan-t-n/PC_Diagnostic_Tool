@@ -128,3 +128,26 @@ async function sampleLive() {
 sampleLive();
 setInterval(sampleLive, 10000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) sampleLive(); });
+
+let scanBusy = false;
+async function runFullScan() {
+  if (scanBusy || document.hidden) return;
+  scanBusy = true;
+  $('scan-now').disabled = true;
+  $('scan-status').textContent = 'Running a full diagnostic scan…';
+  try {
+    const response = await fetch('/api/scan', { method: 'POST', cache: 'no-store' });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error ?? data.detail ?? 'Scan failed');
+    await load();
+    $('scan-status').textContent = 'Full scan complete · ' + new Date().toLocaleTimeString();
+  } catch (error) {
+    $('scan-status').textContent = 'Full scan error: ' + error.message;
+  } finally {
+    scanBusy = false;
+    $('scan-now').disabled = false;
+  }
+}
+$('scan-now').addEventListener('click', runFullScan);
+// Do not scan while the tab is hidden. Full scans write local reports.
+setInterval(() => { if (!document.hidden) runFullScan(); }, 5 * 60 * 1000);
