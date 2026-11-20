@@ -28,7 +28,7 @@ public static class BatteryCollector
 
     private static Program.BatteryInfo GetMacBatteryInfo()
     {
-        var info = new Program.BatteryInfo { Source = "macOS:pmset+system_profiler" };
+        var info = new Program.BatteryInfo { Source = "macOS:pmset+system_profiler+ioreg" };
 
         try
         {
