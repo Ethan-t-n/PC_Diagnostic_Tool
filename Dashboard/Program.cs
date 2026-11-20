@@ -63,4 +63,24 @@ app.MapGet("/api/live", async (CancellationToken cancellationToken) =>
     }
 });
 
+// Scans are only accessible from this loopback-bound server. Prevent concurrent CLI runs.
+using var scanGate = new SemaphoreSlim(1, 1);
+app.MapPost("/api/scan", async (CancellationToken cancellationToken) =>
+{
+    if (!await scanGate.WaitAsync(0, cancellationToken))
+        return Results.Conflict(new { error = "A diagnostic scan is already running." });
+    try
+    {
+        var repositoryRoot = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, ".."));
+        var result = await DiagnosticScan.RunAsync(repositoryRoot, cancellationToken);
+        return result.Success
+            ? Results.Ok(new { message = result.Message })
+            : Results.Problem(result.Message, statusCode: 500);
+    }
+    finally
+    {
+        scanGate.Release();
+    }
+});
+
 app.Run();
