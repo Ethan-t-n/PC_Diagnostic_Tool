@@ -29,6 +29,54 @@ function render(report, file) {
   const low=freePct!==null&&freePct<10;
   $('warning').classList.toggle('hidden',!low);
   if(low)$('warning').textContent='⚠ Low disk space — '+freePct.toFixed(1)+'% free ('+bytes(free)+' available)';
+  const storageVolumes = report.Disks ?? [];
+  const rootVolume = storageVolumes.find(d => d.Name === '/') ?? null;
+  const storageTarget = rootVolume ?? (storageVolumes.length === 1 ? storageVolumes[0] : null);
+  const storageTotal = storageTarget?.TotalBytes;
+  const storageFree = storageTarget?.FreeBytes;
+  const validStorage = Number.isFinite(storageTotal) && storageTotal > 0 && Number.isFinite(storageFree) && storageFree >= 0 && storageFree <= storageTotal;
+  const usedBytes = validStorage ? storageTotal - storageFree : null;
+  const usedPercent = validStorage ? usedBytes / storageTotal * 100 : null;
+  $('storage-total').textContent = validStorage ? bytes(storageTotal) : 'N/A';
+  $('storage-free').textContent = validStorage ? bytes(storageFree) : 'N/A';
+  $('storage-used').textContent = validStorage ? (usedBytes === 0 ? '0 GiB' : bytes(usedBytes)) : 'N/A';
+  $('storage-used-pct').textContent = validStorage ? usedPercent.toFixed(1) + '%' : 'N/A';
+  $('storage-fill').style.width = validStorage ? pct(usedPercent) + '%' : '0%';
+  const volumeContainer = $('storage-volumes');
+  volumeContainer.replaceChildren();
+  if (!storageVolumes.length) {
+    volumeContainer.textContent = 'No logical volumes reported.';
+  } else {
+    for (const volume of storageVolumes) {
+      const dl = document.createElement('dl');
+      dl.className = 'storage-entry';
+      for (const [label, value] of [
+        ['Volume / mount', volume.Name],
+        ['Capacity', Number.isFinite(volume.TotalBytes) && volume.TotalBytes > 0 ? bytes(volume.TotalBytes) : 'Unknown'],
+        ['Available', Number.isFinite(volume.FreeBytes) && volume.FreeBytes >= 0 ? (volume.FreeBytes === 0 ? '0 GiB' : bytes(volume.FreeBytes)) : 'Unknown']
+      ]) {
+        const row = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd');
+        dt.textContent = label; dd.textContent = fmt(value); row.append(dt, dd); dl.append(row);
+      }
+      volumeContainer.append(dl);
+    }
+  }
+  const physicalDisks = report.Storage?.Disks ?? [];
+  const physicalContainer = $('storage-physical');
+  physicalContainer.replaceChildren();
+  if (!physicalDisks.length) {
+    physicalContainer.textContent = 'No physical disk information reported.';
+  } else {
+    for (const diskInfo of physicalDisks) {
+      const dl = document.createElement('dl');
+      dl.className = 'storage-entry';
+      for (const [label, value] of [['Device', diskInfo.Name ?? diskInfo.Model], ['Model', diskInfo.Model], ['TRIM support', diskInfo.TrimSupport]]) {
+        const row = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd');
+        dt.textContent = label; dd.textContent = fmt(value); row.append(dt, dd); dl.append(row);
+      }
+      physicalContainer.append(dl);
+    }
+  }
   facts('memory-facts',[['Installed physical RAM',bytes(sys.RamBytes)],['Live measurement','macOS memory_pressure free percentage'],['Memory health',fmt((health.Items??[]).find(i=>i.Name==='RAM')?.Message)]]);
   facts('cpu-facts',[['Processor',sys.CpuModel],['Logical CPU count',sys.CpuCores],['Architecture',sys.Architecture]]);
   facts('system-facts',[['Operating system',sys.OsDescription],['Processor',sys.CpuModel],['CPU cores',sys.CpuCores],['Memory',bytes(sys.RamBytes)],['Architecture',sys.Architecture],['.NET version',sys.DotNetVersion]]);
