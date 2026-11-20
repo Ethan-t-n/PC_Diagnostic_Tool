@@ -203,7 +203,7 @@ public class Program
         var battery = BatteryCollector.GetBatteryInfo();
         var storage = SsdCollector.GetStorageInfo();
         var network = BuildNetworkInfo();
-        var health = BuildHealthSummary();
+        var health = BuildHealthSummary(network);
 
 
 
@@ -336,7 +336,7 @@ public class Program
         return result;
     }
 
-    static HealthSummary BuildHealthSummary()
+    static HealthSummary BuildHealthSummary(NetworkInfo? network = null)
     {
         var items = new List<HealthItem>();
 
@@ -349,7 +349,7 @@ public class Program
 
         items.Add(ScoreDiskFree());
 
-        items.Add(ScoreNetwork());
+        items.Add(ScoreNetwork(network?.Pings.InternetPing));
 
         var wifi = WifiCollector.GetWifiInfo();
         items.Add(ScoreWifi(wifi));
@@ -904,12 +904,12 @@ public class Program
         }
     }
 
-    static HealthItem ScoreNetwork()
+    static HealthItem ScoreNetwork(string? measuredInternetPing = null)
     {
-        var internet = PingHost("1.1.1.1");
+        var internet = measuredInternetPing ?? PingHost("1.1.1.1");
         var ok = internet.StartsWith("OK", StringComparison.OrdinalIgnoreCase);
 
-        if (ok) return Green("Network", 95, $"Internet ping OK ({internet})");
+        if (ok) return Green("Network", 95, $"Internet ping {internet}");
         return Red("Network", 15, $"Internet ping failed ({internet})");
     }
 
