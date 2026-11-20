@@ -82,6 +82,21 @@ function render(report, file) {
       physicalContainer.append(dl);
     }
   }
+  const networkItem = (health.Items ?? []).find(i => i.Name === 'Network');
+  const networkLevel = networkItem ? levelName(networkItem.Level) : 'Unknown';
+  $('network-health').textContent = networkLevel;
+  $('network-score').textContent = Number.isFinite(networkItem?.Score) && networkLevel !== 'Unknown' ? networkItem.Score + '/100' : 'N/A';
+  $('network-health-message').textContent = fmt(networkItem?.Message, 'No network health explanation in latest report.');
+  facts('network-facts',[
+    ['Primary adapter', network.PrimaryAdapterName],
+    ['Adapter type', network.PrimaryAdapterType],
+    ['Local IPv4 address', network.IPv4],
+    ['Default gateway', network.Gateway],
+    ['Wi-Fi network (SSID)', network.Wifi?.Ssid]
+  ]);
+  facts('network-pings',[
+    ['Internet ping result', network.Pings?.InternetPing]
+  ]);
   facts('memory-facts',[['Installed physical RAM',bytes(sys.RamBytes)],['Live measurement','macOS memory_pressure free percentage'],['Memory health',fmt((health.Items??[]).find(i=>i.Name==='RAM')?.Message)]]);
   facts('cpu-facts',[['Processor',sys.CpuModel],['Logical CPU count',sys.CpuCores],['Architecture',sys.Architecture]]);
   facts('system-facts',[['Operating system',sys.OsDescription],['Processor',sys.CpuModel],['CPU cores',sys.CpuCores],['Memory',bytes(sys.RamBytes)],['Architecture',sys.Architecture],['.NET version',sys.DotNetVersion]]);
