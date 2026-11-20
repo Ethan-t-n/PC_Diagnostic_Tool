@@ -8,3 +8,5 @@
 .memory-details{margin-top:20px;scroll-margin-top:20px}.memory-details p.muted{line-height:1.6}.memory-details code{color:#d7c2ff}
 
 .storage-details{margin-top:20px;scroll-margin-top:20px}.storage-details h3{font-size:15px;margin:24px 0 12px}.storage-details p.muted{line-height:1.6}.storage-track{margin:0 0 18px}.storage-volumes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px}.storage-entry{background:#111522;border:1px solid #30374b;border-radius:10px;padding:12px 16px;min-width:0}.storage-entry div:last-child{border-bottom:0}.storage-entry dd{max-width:60%}
+
+.storage-track{display:flex;margin-bottom:8px}.storage-track .fill{flex:none;border-radius:20px 0 0 20px}.storage-available-fill{height:100%;background:#42d999;flex:none;border-radius:0 20px 20px 0}.storage-bar-labels{display:flex;justify-content:space-between;gap:12px;color:#c4cbe0;font-size:13px;font-variant-numeric:tabular-nums;margin-bottom:18px}
