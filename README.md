@@ -1,235 +1,137 @@
 # 🖥️ PC Diagnostic Tool
 
-A cross-platform (Windows + macOS) command-line diagnostic tool written in **C# (.NET)** that scans your system, network, storage, performance, and battery health — then exports everything into **human-readable** and **machine-readable** reports.
+A local-first, cross-platform **C# / .NET 10** diagnostic application for **macOS and Windows**. Run a command-line scan to export system reports, or use the built-in **web dashboard** to inspect hardware, performance, connectivity, battery information, and running processes.
 
-This project is designed to grow into a full desktop diagnostic application (GUI, health scoring, etc.), but already provides powerful real-world diagnostics.
+> **Status:** Actively developed. The dashboard and process monitoring have been tested on macOS; Windows-specific behavior still needs broader testing. Some readings depend on operating-system permissions and available hardware.
 
----
+## ✨ Features
 
-## 🚀 What This Tool Does
+### Local web dashboard
+- Dark-themed dashboard at **http://127.0.0.1:5050/**
+- System overview with health scores and component summaries
+- Dedicated **CPU, Memory, Storage, Network, Battery, and Processes** sections
+- Detailed system information and report views
+- **Run new scan** and **Reload report** controls
+- Automatic full scans approximately every **5 minutes** while the browser tab is visible
+- Live metrics and a read-only process list that refreshes approximately every **10 seconds** while the tab is visible
 
-When you run the app, it automatically collects:
+### 🧠 System and CPU
+- OS version, CPU architecture and model, logical processor count, RAM, uptime, last boot time, and .NET runtime information
+- CPU utilization and detailed CPU diagnostics, when supported
 
-### 🧠 System Information
-- OS name & version  
-- CPU architecture & core count  
-- CPU model (Intel / AMD / Apple Silicon)  
-- Total RAM  
-- System uptime  
-- Last boot time  
-- .NET runtime version  
+### 🧮 Memory
+- Total and used memory, utilization, and additional memory/pressure details where the operating system provides them
 
-### 📊 Live Performance
-- CPU usage %
-- RAM usage %
+### 💾 Storage
+- Mounted drives, filesystem, total/free capacity
+- Physical disk model, type (SSD/HDD), interface, TRIM, and SMART/health information where available
+- Platform-specific collection using macOS utilities and Windows management interfaces
 
-(Works on macOS and Windows using native OS tools)
+### 🌐 Network and Wi-Fi
+- Hostname, adapters, IP addresses, gateway, DNS, link details, and connectivity checks
+- Gateway and public-IP ping tests
+- Wi-Fi details such as SSID, signal, channel, security, and link characteristics **when accessible**
 
----
+**macOS Wi-Fi privacy note:** Modern macOS versions can redact the SSID/BSSID or restrict other Wi-Fi details because of Location Services and privacy protections. Running the app with `sudo` does **not** reliably bypass those protections. The dashboard should indicate when data is unavailable or restricted; it must not invent a network name. Windows uses a separate collection path and should not display macOS-specific restriction messaging.
 
-## 💾 Disk Information
+### 🔋 Battery
+- Presence, current charge, charging state, condition, and cycle count
+- Design capacity, full-charge capacity, and estimated battery health when reported by the device
+- Dashboard charge and estimated-health progress bars
+- macOS data sources include `pmset`, `system_profiler`, and `ioreg`; Windows battery information uses Windows APIs/WMI where available
+- Desktops or devices that do not expose battery measurements may show **N/A**
 
-### Logical drives
-For every mounted drive:
-- Drive name  
-- File system  
-- Total space  
-- Free space
+### ▦ Running processes
+- Read-only table of the **top 15 accessible processes**
+- Process name, process ID (PID), CPU utilization, and working-set memory
+- Sort by highest CPU or highest memory usage
+- CPU percentage is normalized to **total logical CPU capacity** over a short sample interval
+- Protected or inaccessible processes may be omitted; there are **no process termination controls**
 
-### Physical storage (SSDs / HDDs)
-- Disk name & model  
-- Capacity  
-- SSD vs HDD detection  
-- TRIM support  
-- SMART status (when available)  
-- Interface type  
-- Health status  
-
-Supports:
-- macOS via `diskutil` + `system_profiler`
-- Windows via WMI
-
----
-
-### 🌐 Network Diagnostics
-- Hostname  
-- Primary network adapter  
-- IPv4 & IPv6 addresses  
-- Default gateway  
-- DNS servers  
-
-Connectivity tests:
-- Ping your gateway  
-- Ping `1.1.1.1` (Cloudflare)  
-
-Active adapters:
-- Adapter name & type  
-- MAC address  
-- Link speed  
-- IP addresses  
-- Gateways  
-- DNS servers
-
----
-
-## 📡 Wi-Fi (macOS + Windows)
-- SSID  
-- Signal strength (%)  
-- RSSI (dBm)  
-- Noise  
-- Channel  
-- PHY mode  
-- Security type  
-- TX rate  
-
-On macOS, Wi-Fi data requires admin privileges.
-
-Run with:
-
-`sudo dotnet run`
-
----
-
-### 🔋 Battery Health (Laptops)
-On supported systems:
-- Battery present or not  
-- Charge percentage  
-- Charging / discharging  
-- Cycle count  
-- Battery condition  
-- Full charge capacity  
-- Design capacity  
-
-Supports:
-- **macOS** (via `pmset` + `system_profiler`)
-- **Windows** (via WMI `Win32_Battery`)
-
----
-
-## ❤️ Health Score System
-
-Each scan produces a full health report:
-
-| Component | What is evaluated |
-|--------|------------------|
-| CPU | Current usage |
-| RAM | Memory pressure |
-| Disk | Free space on system drive |
-| Network | Internet connectivity |
-| Wi-Fi | Signal strength |
-| Battery | Condition & presence |
-
-Each category gets:
-- Score (0–100)
-- Color status (Green / Yellow / Red / Unknown)
-- Human-readable explanation  
-
-An overall system health score is calculated.
-
-Example output:
-
-| Component | Status | Score | Details |
-|---------|--------|-------|---------|
-| CPU | Green | 95/100 | 35.8% usage (healthy) |
-| RAM | Red | 25/100 | 91% used (very tight) |
-| Disk | Yellow | 60/100 | 15% free (low) |
-| Network | Green | 95/100 | Internet OK |
-| Wi-Fi | Green | 95/100 | Strong signal |
-| Battery | Green | 95/100 | Condition: Normal |
-
-Overall Health: **74/100 (Yellow)**
-
-
-## 📄 Report Export
-
-Every run generates two reports inside a `/reports` folder:
-
-### 1️⃣ Text Report
-Easy to read for humans:
-
-reports/pc_diagnostic_YYYYMMDD_HHMMSS.txt
-
-### 2️⃣ JSON Report
-Structured machine-readable data:
-
-reports/pc_diagnostic_YYYYMMDD_HHMMSS.json
-
-The JSON includes:
-
-```json
-{
-  "GeneratedAt": "...",
-  "MachineName": "...",
-  "System": { ... },
-  "Disks": [ ... ],
-  "Network": { ... },
-  "Battery": { ... },
-  "Health": { ... }
-}
-```
-
-This allows:
-- GUI apps
-- Remote monitoring
-- Health scoring
-- Cloud uploads
-- Trend tracking
-- Future dashboards
-
----
-
-## 🛡️ Privacy & Git Safety
-
-The `/reports` folder is excluded from Git using `.gitignore`, so your personal machine data is **never** pushed to GitHub.
-
----
+### ❤️ Health scoring
+Component-level status, score, and explanations for supported CPU, memory, disk, network, Wi-Fi, and battery checks, plus an overall health summary. Missing or unsupported measurements should be treated as unknown rather than assumed healthy.
 
 ## 🧰 Requirements
 
-- .NET 8+ (or newer)
-- macOS or Windows  
-- Terminal access  
+- **.NET 10 SDK**
+- **macOS or Windows**
+- Terminal access
+- A modern web browser for the dashboard
 
-For Windows battery & performance:
-dotnet add package System.Management
+Dependencies are declared in the project files and restored automatically by `dotnet`; you do not need to manually add `System.Management`.
 
----
+## ▶️ Getting started
 
-## ▶️ How to Run
+From the repository root:
 
-`dotnet run`
+```bash
+git clone https://github.com/Ethan-t-n/PC_Diagnostic_Tool.git
+cd PC_Diagnostic_Tool
+dotnet restore
+```
 
-For full Wi-Fi access on macOS:
+### Option A — Open the dashboard (recommended)
 
-`sudo dotnet run`
+```bash
+dotnet run --project Dashboard/Dashboard.csproj
+```
 
-After it finishes:
-- View the console output
-- Open the `/reports` folder for your exported files
+Open **http://127.0.0.1:5050/** in your browser.
 
----
+Use **Run new scan** to generate a fresh report, or **Reload report** to display the most recent saved report. Stop the server with **Ctrl+C** in the terminal.
+
+The dashboard binds to **127.0.0.1** (your own computer), not a public network interface.
+
+### Option B — Run a command-line scan
+
+```bash
+dotnet run --project PC_Diagnostic_Tool.csproj
+```
+
+The scan prints diagnostic information and writes reports to the `reports/` directory.
+
+### Build checks
+
+```bash
+dotnet build PC_Diagnostic_Tool.csproj
+dotnet build Dashboard/Dashboard.csproj
+```
+
+## 📄 Reports
+
+Each command-line scan generates timestamped reports:
+
+```text
+reports/
+  pc_diagnostic_YYYYMMDD_HHMMSS.txt
+  pc_diagnostic_YYYYMMDD_HHMMSS.json
+```
+
+- **TXT:** human-readable diagnostic summary
+- **JSON:** structured results used by the dashboard and suitable for further analysis
+
+The dashboard reads the latest saved JSON report. Live process samples are collected through a separate local endpoint and are not necessarily included in the exported report.
+
+## 🔒 Privacy and limitations
+
+- The dashboard is served **locally** at `127.0.0.1:5050`.
+- Diagnostic reports may contain sensitive system or network information; review them before sharing.
+- Generated `reports/` files are excluded from Git by the project's ignore rules.
+- Hardware details, SMART data, temperatures, Wi-Fi fields, and battery capacities vary by platform and permissions.
+- This is a diagnostic and informational tool, not a substitute for professional hardware testing.
 
 ## 🧭 Roadmap
 
-This tool is designed to grow into a full professional diagnostic suite.
+Potential future improvements (not yet implemented):
 
-Planned upgrades:
-- Windows GUI (WPF)
-- Historical health tracking
-- CPU thermals
-- Memory pressure metrics
-- Battery wear scoring
-- Wi-Fi quality graphs
-- Performance graphs
-- Save history
-- Export to CSV / PDF
+- Historical scan browsing, comparisons, and performance trend graphs
+- More comprehensive hardware temperature monitoring where supported
+- Expanded Windows compatibility and automated cross-platform tests
+- CSV/PDF export
+- Additional diagnostic explanations and troubleshooting guidance
 
----
+## 🤝 Development
 
-## ✨ Why This Exists
+Development is organized into small feature branches and pull requests. The application currently includes a .NET command-line collector and a separate ASP.NET Core dashboard.
 
-Most PC diagnostic tools are:
-- Bloated
-- Closed-source
-- Full of ads
-- Hard to automate
+Contributions, bug reports, and platform-specific testing feedback are welcome.
