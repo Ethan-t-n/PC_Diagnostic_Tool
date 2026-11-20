@@ -47,4 +47,20 @@ app.MapGet("/api/report/latest", async () =>
     }
 });
 
+// Serialize live probes so multiple browser tabs cannot spawn unbounded processes.
+using var liveProbeGate = new SemaphoreSlim(1, 1);
+app.MapGet("/api/live", async (CancellationToken cancellationToken) =>
+{
+    if (!await liveProbeGate.WaitAsync(0, cancellationToken))
+        return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+    try
+    {
+        return Results.Json(await LiveMetrics.SampleAsync(cancellationToken));
+    }
+    finally
+    {
+        liveProbeGate.Release();
+    }
+});
+
 app.Run();
