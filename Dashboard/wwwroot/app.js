@@ -254,3 +254,41 @@ async function runFullScan() {
 $('scan-now').addEventListener('click', runFullScan);
 // Do not scan while the tab is hidden. Full scans write local reports.
 setInterval(() => { if (!document.hidden) runFullScan(); }, 5 * 60 * 1000);
+
+let processData = [];
+let processBusy = false;
+function renderProcesses() {
+  const sort = $('process-sort').value;
+  const rows = [...processData].sort((a,b) => sort === 'cpu' ? b.cpuPercent - a.cpuPercent || b.memoryBytes - a.memoryBytes : b.memoryBytes - a.memoryBytes || b.cpuPercent - a.cpuPercent).slice(0,15);
+  const tbody = $('process-rows');
+  tbody.replaceChildren();
+  if (!rows.length) {
+    const tr = document.createElement('tr'), td = document.createElement('td');
+    td.colSpan = 4; td.textContent = 'No accessible process samples available.'; tr.append(td); tbody.append(tr); return;
+  }
+  for (const p of rows) {
+    const tr = document.createElement('tr');
+    for (const value of [p.name, p.pid, Number.isFinite(p.cpuPercent) ? p.cpuPercent.toFixed(1)+'%' : 'N/A', Number.isFinite(p.memoryBytes) ? (p.memoryBytes / (1024*1024)).toFixed(1)+' MiB' : 'N/A']) {
+      const td = document.createElement('td'); td.textContent = String(value); tr.append(td);
+    }
+    tbody.append(tr);
+  }
+}
+async function sampleProcesses() {
+  if (processBusy || document.hidden) return;
+  processBusy = true;
+  try {
+    const response = await fetch('/api/processes', {cache:'no-store'});
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const data = await response.json();
+    processData = Array.isArray(data.processes) ? data.processes : [];
+    renderProcesses();
+    $('process-status').textContent = 'Updated ' + new Date(data.sampledAtUtc).toLocaleTimeString();
+  } catch (error) {
+    $('process-status').textContent = 'Process data unavailable (' + error.message + ')';
+  } finally { processBusy = false; }
+}
+$('process-sort').addEventListener('change', renderProcesses);
+sampleProcesses();
+setInterval(sampleProcesses, 10000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) sampleProcesses(); });
