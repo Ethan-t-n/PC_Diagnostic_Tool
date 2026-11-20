@@ -94,6 +94,32 @@ function render(report, file) {
     ['Default gateway', network.Gateway],
     ['Wi-Fi network (SSID)', network.Wifi?.Ssid || (network.Wifi?.Notes?.includes('SSID restricted by macOS') ? 'Restricted by macOS' : 'Unknown')]
   ]);
+  const batteryPresent = battery.IsPresent === true;
+  const charge = batteryPresent && Number.isFinite(battery.Percentage) && battery.Percentage >= 0 && battery.Percentage <= 100 ? battery.Percentage : null;
+  const charging = !batteryPresent ? 'N/A' : battery.IsCharging === true ? 'Charging' : battery.IsCharging === false ? 'Not charging' : 'Unknown';
+  const design = batteryPresent && Number.isFinite(battery.DesignCapacitymAh) && battery.DesignCapacitymAh > 0 ? battery.DesignCapacitymAh : null;
+  const full = batteryPresent && Number.isFinite(battery.FullChargeCapacitymAh) && battery.FullChargeCapacitymAh > 0 ? battery.FullChargeCapacitymAh : null;
+  const batteryHealth = design !== null && full !== null ? full / design * 100 : null;
+  $('battery-charge').textContent = charge === null ? 'N/A' : charge + '%';
+  $('battery-charging').textContent = charging;
+  $('battery-condition').textContent = batteryPresent ? fmt(battery.Condition, 'Unknown') : 'N/A';
+  $('battery-cycles').textContent = batteryPresent && Number.isInteger(battery.CycleCount) && battery.CycleCount >= 0 ? String(battery.CycleCount) : 'N/A';
+  $('battery-fill').style.width = charge === null ? '0%' : pct(charge) + '%';
+  $('battery-charge-label').textContent = charge === null ? 'N/A' : charge + '%';
+  const healthLabel = batteryHealth === null ? 'N/A' : batteryHealth.toFixed(1) + '%';
+  $('battery-health-label').textContent = healthLabel;
+  $('battery-health-fill').style.width = batteryHealth === null ? '0%' : pct(batteryHealth) + '%';
+  $('battery-health-progress').setAttribute('aria-valuenow', batteryHealth === null ? '0' : String(pct(batteryHealth)));
+  $('battery-health-progress').setAttribute('aria-valuetext', batteryHealth === null ? 'Estimated battery health unavailable' : healthLabel + ' estimated battery health');
+  $('battery-progress').setAttribute('aria-valuenow', charge === null ? '0' : String(charge));
+  $('battery-progress').setAttribute('aria-valuetext', charge === null ? 'Battery charge unavailable' : charge + '% charged');
+  $('battery-status-note').textContent = batteryPresent ? 'Battery detected.' : fmt(battery.Notes, 'No battery detected or battery data unavailable.');
+  facts('battery-facts', [
+    ['Design capacity', design === null ? 'N/A' : design + ' mAh'],
+    ['Full-charge capacity', full === null ? 'N/A' : full + ' mAh'],
+    ['Estimated battery health', batteryHealth === null ? 'N/A' : batteryHealth.toFixed(1) + '%'],
+    ['Data source', fmt(battery.Source, 'Unknown')]
+  ]);
   facts('memory-facts',[['Installed physical RAM',bytes(sys.RamBytes)],['Live measurement','macOS memory_pressure free percentage'],['Memory health',fmt((health.Items??[]).find(i=>i.Name==='RAM')?.Message)]]);
   facts('cpu-facts',[['Processor',sys.CpuModel],['Logical CPU count',sys.CpuCores],['Architecture',sys.Architecture]]);
   facts('system-facts',[['Operating system',sys.OsDescription],['Processor',sys.CpuModel],['CPU cores',sys.CpuCores],['Memory',bytes(sys.RamBytes)],['Architecture',sys.Architecture],['.NET version',sys.DotNetVersion]]);
