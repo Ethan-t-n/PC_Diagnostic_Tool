@@ -10,7 +10,7 @@
   <div class="shell">
     <aside class="sidebar">
       <div class="brand"><span class="brand-icon">▣</span><div><strong>PC Diagnostic</strong><small>Local Health Dashboard</small></div></div>
-      <nav aria-label="Dashboard navigation"><a class="selected" href="#overview">◈ &nbsp; Overview</a><a href="#cpu-details">▣ &nbsp; CPU Details</a><a href="#components">▤ &nbsp; Components</a><a href="#details">ⓘ &nbsp; System Details</a><a href="#reports">▧ &nbsp; Reports</a></nav>
+      <nav aria-label="Dashboard navigation"><a class="selected" href="#overview">◈ &nbsp; Overview</a><a href="#cpu-details">▣ &nbsp; CPU Details</a><a href="#memory-details">▤ &nbsp; Memory Details</a><a href="#components">▤ &nbsp; Components</a><a href="#details">ⓘ &nbsp; System Details</a><a href="#reports">▧ &nbsp; Reports</a></nav>
       <div class="sidebar-bottom"><span class="dot"></span> Local only <small>127.0.0.1:5050</small></div>
     </aside>
     <main id="overview">
@@ -35,6 +35,17 @@
           <div><span class="muted">Samples collected</span><strong id="cpu-count">0</strong></div>
         </div>
         <p class="muted" id="cpu-explanation">Statistics reflect only the last 30 successful live samples collected in this browser tab, not historical system-wide averages. CPU temperature and per-core usage are not measured by this dashboard.</p>
+      </section>
+      <section class="panel cpu-details memory-details" id="memory-details" aria-labelledby="memory-details-title">
+        <div class="panel-heading"><div><p class="eyebrow">MEMORY DETAILS</p><h2 id="memory-details-title">Memory monitoring</h2></div><span class="muted">Live samples · 10-second interval</span></div>
+        <dl id="memory-facts"></dl>
+        <div class="cpu-stats">
+          <div><span class="muted">Current pressure free metric</span><strong id="memory-current">—</strong></div>
+          <div><span class="muted">Average (observed)</span><strong id="memory-average">—</strong></div>
+          <div><span class="muted">Lowest (observed)</span><strong id="memory-lowest">—</strong></div>
+          <div><span class="muted">Valid samples in window</span><strong id="memory-count">0</strong></div>
+        </div>
+        <p class="muted">These percentages come from macOS <code>memory_pressure</code> and are <strong>not</strong> the percentage of physical RAM available. Installed RAM is from the last diagnostic report. Average and lowest values use the last 30 live samples in this tab; missing readings are excluded.</p>
       </section>
       <div class="section-title" id="components"><h2>Hardware overview</h2><span class="muted">Last recorded values · not live sensors</span></div>
       <div class="metrics" id="metrics"></div>

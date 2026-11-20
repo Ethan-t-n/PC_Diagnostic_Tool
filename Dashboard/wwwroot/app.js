@@ -29,6 +29,7 @@ function render(report, file) {
   const low=freePct!==null&&freePct<10;
   $('warning').classList.toggle('hidden',!low);
   if(low)$('warning').textContent='⚠ Low disk space — '+freePct.toFixed(1)+'% free ('+bytes(free)+' available)';
+  facts('memory-facts',[['Installed physical RAM',bytes(sys.RamBytes)],['Live measurement','macOS memory_pressure free percentage'],['Memory health',fmt((health.Items??[]).find(i=>i.Name==='RAM')?.Message)]]);
   facts('cpu-facts',[['Processor',sys.CpuModel],['Logical CPU count',sys.CpuCores],['Architecture',sys.Architecture]]);
   facts('system-facts',[['Operating system',sys.OsDescription],['Processor',sys.CpuModel],['CPU cores',sys.CpuCores],['Memory',bytes(sys.RamBytes)],['Architecture',sys.Architecture],['.NET version',sys.DotNetVersion]]);
   const items=health.Items??[], find=n=>items.find(i=>i.Name===n);
@@ -120,6 +121,11 @@ async function sampleLive() {
     $('cpu-peak').textContent = validCpu.length ? Math.max(...validCpu).toFixed(1) + '%' : 'N/A';
     $('cpu-count').textContent = String(validCpu.length);
     appendSample(liveSeries.memory, data.macMemoryPressureFreePercent);
+    const validMemory = liveSeries.memory.filter(Number.isFinite);
+    $('memory-current').textContent = Number.isFinite(data.macMemoryPressureFreePercent) ? data.macMemoryPressureFreePercent.toFixed(0) + '%' : 'N/A';
+    $('memory-average').textContent = validMemory.length ? (validMemory.reduce((sum, n) => sum + n, 0) / validMemory.length).toFixed(1) + '%' : 'N/A';
+    $('memory-lowest').textContent = validMemory.length ? Math.min(...validMemory).toFixed(0) + '%' : 'N/A';
+    $('memory-count').textContent = String(validMemory.length);
     $('live-cpu').textContent = Number.isFinite(data.cpuUsagePercent) ? data.cpuUsagePercent.toFixed(1) + '%' : 'N/A';
     $('live-memory').textContent = Number.isFinite(data.macMemoryPressureFreePercent) ? data.macMemoryPressureFreePercent + '%' : 'N/A';
     drawSeries('cpu-line', liveSeries.cpu);
