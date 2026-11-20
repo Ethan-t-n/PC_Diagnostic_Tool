@@ -20,6 +20,11 @@
         <section class="panel score-panel"><div class="score-ring" id="ring"><div><strong id="overall">—</strong><small>/100</small></div></div><div class="score-copy"><p class="eyebrow">OVERALL HEALTH</p><h2 id="overall-label">Waiting for scan</h2><p class="muted">Calculated by your existing C# diagnostic engine.</p><div id="warning" class="warning hidden"></div></div></section>
         <section class="panel machine-panel"><p class="section-heading">SYSTEM INFORMATION</p><dl id="system-facts"></dl></section>
       </div>
+      <div class="section-title" id="live"><h2>Live performance</h2><span class="muted" id="live-status" role="status">Connecting to local sensors…</span></div>
+      <div class="live-grid">
+        <section class="panel live-panel"><div class="live-heading"><div><p class="eyebrow">PROCESSOR</p><h2>CPU usage</h2></div><strong class="live-value" id="live-cpu">—</strong></div><svg class="live-chart" id="cpu-chart" role="img" aria-label="CPU utilization history" viewBox="0 0 500 140" preserveAspectRatio="none"><path class="gridline" d="M0 35 H500 M0 70 H500 M0 105 H500"/><polyline id="cpu-line" fill="none" stroke="#ae86ff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points=""/></svg><p class="muted">Last 30 samples · 10-second interval</p></section>
+        <section class="panel live-panel"><div class="live-heading"><div><p class="eyebrow">MEMORY PRESSURE</p><h2>System-wide free memory</h2></div><strong class="live-value" id="live-memory">—</strong></div><svg class="live-chart" id="memory-chart" role="img" aria-label="macOS memory pressure free percentage history" viewBox="0 0 500 140" preserveAspectRatio="none"><path class="gridline" d="M0 35 H500 M0 70 H500 M0 105 H500"/><polyline id="memory-line" fill="none" stroke="#43dba1" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points=""/></svg><p class="muted">macOS memory_pressure metric · not physical RAM free</p></section>
+      </div>
       <div class="section-title" id="components"><h2>Hardware overview</h2><span class="muted">Last recorded values · not live sensors</span></div>
       <div class="metrics" id="metrics"></div>
       <div class="lower">
