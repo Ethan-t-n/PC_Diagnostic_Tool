@@ -83,4 +83,14 @@ app.MapPost("/api/scan", async (CancellationToken cancellationToken) =>
     }
 });
 
+// Local, read-only process telemetry. Avoid overlapping samples across tabs.
+using var processGate = new SemaphoreSlim(1, 1);
+app.MapGet("/api/processes", async (CancellationToken cancellationToken) =>
+{
+    if (!await processGate.WaitAsync(0, cancellationToken))
+        return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+    try { return Results.Json(await ProcessMetrics.SampleAsync(cancellationToken)); }
+    finally { processGate.Release(); }
+});
+
 app.Run();
