@@ -50,7 +50,7 @@ public static class WifiCollector
             {
                 if (!info.IsAvailable)
                     info.Notes = "Wi-Fi details require additional permissions; wireless connection not confirmed.";
-                return info;
+                return FillFromSystemProfiler(info);
             }
 
             var wifiSection = ExtractSection(output, "WIFI");
@@ -89,15 +89,65 @@ public static class WifiCollector
             else if (!string.IsNullOrWhiteSpace(ssid))
                 info.Notes = null;
 
-            return info;
+            return string.IsNullOrWhiteSpace(info.Ssid) ? FillFromSystemProfiler(info) : info;
         }
         catch (Exception ex)
         {
             info.Notes = info.IsAvailable
                 ? $"Wireless adapter active; detailed query unavailable ({ex.GetType().Name})."
                 : $"macOS Wi-Fi query error: {ex.GetType().Name}";
-            return info;
+            return FillFromSystemProfiler(info);
         }
+    }
+
+    // system_profiler exposes the connected network under en0 -> Current Network Information.
+    // Do not search the Other Local Wi-Fi Networks section (those SSIDs are not ours).
+    private static Program.WifiInfo FillFromSystemProfiler(Program.WifiInfo info)
+    {
+        try
+        {
+            var output = Program.RunCommand("system_profiler", "SPAirPortDataType");
+            var lines = output.Split('\n');
+            var inCurrent = false;
+            var currentIndent = -1;
+            for (var i = 0; i < lines.Length; i++)
+            {
+                var line = lines[i].TrimEnd('\r');
+                var trimmed = line.Trim();
+                var indent = line.Length - line.TrimStart().Length;
+                if (trimmed == "Current Network Information:")
+                {
+                    inCurrent = true;
+                    currentIndent = indent;
+                    continue;
+                }
+                if (!inCurrent) continue;
+                if (trimmed.Length == 0) continue;
+                if (indent <= currentIndent) break;
+                // The SSID is the first indented heading, not a labeled SSID field.
+                if (trimmed.EndsWith(":") && indent > currentIndent &&
+                    !trimmed.StartsWith("Network Type:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var candidate = trimmed.Substring(0, trimmed.Length - 1).Trim();
+                    if (candidate.Length == 0) break;
+                    if (candidate.Equals("<redacted>", StringComparison.OrdinalIgnoreCase))
+                    {
+                        info.Ssid = null;
+                        info.Notes = "SSID restricted by macOS; wireless adapter status remains available.";
+                        break;
+                    }
+                    info.Ssid = candidate;
+                    info.IsAvailable = true;
+                    info.Source = "macOS:system_profiler SPAirPortDataType";
+                    info.Notes = null;
+                    break;
+                }
+                // A property without a network heading means the SSID was not disclosed.
+                if (trimmed.Contains(":")) break;
+            }
+        }
+        catch { /* Preserve the original network-link observation. */ }
+        return info;
     }
 
     private static Program.WifiInfo GetWindowsWifiInfo()
