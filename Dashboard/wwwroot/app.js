@@ -42,6 +42,11 @@ function render(report, file) {
   $('storage-used').textContent = validStorage ? (usedBytes === 0 ? '0 GiB' : bytes(usedBytes)) : 'N/A';
   $('storage-used-pct').textContent = validStorage ? usedPercent.toFixed(1) + '%' : 'N/A';
   $('storage-fill').style.width = validStorage ? pct(usedPercent) + '%' : '0%';
+  $('storage-available-fill').style.width = validStorage ? pct(100 - usedPercent) + '%' : '0%';
+  $('storage-bar-used').textContent = validStorage ? usedPercent.toFixed(1) + '% used' : 'Used: N/A';
+  $('storage-bar-available').textContent = validStorage ? (100 - usedPercent).toFixed(1) + '% available' : 'Available: N/A';
+  $('storage-progress').setAttribute('aria-valuenow', validStorage ? usedPercent.toFixed(1) : '0');
+  $('storage-progress').setAttribute('aria-valuetext', validStorage ? usedPercent.toFixed(1) + '% used, ' + (100 - usedPercent).toFixed(1) + '% available' : 'Storage information unavailable');
   const volumeContainer = $('storage-volumes');
   volumeContainer.replaceChildren();
   if (!storageVolumes.length) {
