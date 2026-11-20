@@ -130,6 +130,12 @@ public static class WifiCollector
                 {
                     var candidate = trimmed.Substring(0, trimmed.Length - 1).Trim();
                     if (candidate.Length == 0) break;
+                    if (candidate.Equals("<redacted>", StringComparison.OrdinalIgnoreCase))
+                    {
+                        info.Ssid = null;
+                        info.Notes = "SSID restricted by macOS; wireless adapter status remains available.";
+                        break;
+                    }
                     info.Ssid = candidate;
                     info.IsAvailable = true;
                     info.Source = "macOS:system_profiler SPAirPortDataType";
