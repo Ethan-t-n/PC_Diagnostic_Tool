@@ -10,7 +10,7 @@
   <div class="shell">
     <aside class="sidebar">
       <div class="brand"><span class="brand-icon">▣</span><div><strong>PC Diagnostic</strong><small>Local Health Dashboard</small></div></div>
-      <nav aria-label="Dashboard navigation"><a class="selected" href="#overview">◈ &nbsp; Overview</a><a href="#cpu-details">▣ &nbsp; CPU Details</a><a href="#memory-details">▤ &nbsp; Memory Details</a><a href="#components">▤ &nbsp; Components</a><a href="#details">ⓘ &nbsp; System Details</a><a href="#reports">▧ &nbsp; Reports</a></nav>
+      <nav aria-label="Dashboard navigation"><a class="selected" href="#overview">◈ &nbsp; Overview</a><a href="#cpu-details">▣ &nbsp; CPU Details</a><a href="#memory-details">▤ &nbsp; Memory Details</a><a href="#storage-details">▥ &nbsp; Storage Details</a><a href="#components">▤ &nbsp; Components</a><a href="#details">ⓘ &nbsp; System Details</a><a href="#reports">▧ &nbsp; Reports</a></nav>
       <div class="sidebar-bottom"><span class="dot"></span> Local only <small>127.0.0.1:5050</small></div>
     </aside>
     <main id="overview">
@@ -46,6 +46,22 @@
           <div><span class="muted">Valid samples in window</span><strong id="memory-count">0</strong></div>
         </div>
         <p class="muted">These percentages come from macOS <code>memory_pressure</code> and are <strong>not</strong> the percentage of physical RAM available. Installed RAM is from the last diagnostic report. Average and lowest values use the last 30 live samples in this tab; missing readings are excluded.</p>
+      </section>
+      <section class="panel cpu-details storage-details" id="storage-details" aria-labelledby="storage-details-title">
+        <div class="panel-heading"><div><p class="eyebrow">STORAGE DETAILS</p><h2 id="storage-details-title">Storage monitoring</h2></div><span class="muted">Latest diagnostic scan · not live</span></div>
+        <div class="cpu-stats">
+          <div><span class="muted">Root volume capacity</span><strong id="storage-total">—</strong></div>
+          <div><span class="muted">Available space</span><strong id="storage-free">—</strong></div>
+          <div><span class="muted">Used space (calculated)</span><strong id="storage-used">—</strong></div>
+          <div><span class="muted">Capacity used</span><strong id="storage-used-pct">—</strong></div>
+        </div>
+        <div class="track storage-track" role="progressbar" id="storage-progress" aria-label="Storage capacity used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="storage-fill"></div><div class="storage-available-fill" id="storage-available-fill"></div></div>
+        <div class="storage-bar-labels"><span id="storage-bar-used">— used</span><span id="storage-bar-available">— available</span></div>
+        <h3>Reported volumes</h3>
+        <div id="storage-volumes" class="storage-volumes"></div>
+        <h3>Physical disk information</h3>
+        <div id="storage-physical" class="storage-volumes"></div>
+        <p class="muted">Values are from the most recent completed diagnostic scan. On macOS, APFS volumes may share one container's free space; volume capacities must not be added together to calculate physical storage. Used space is calculated as capacity minus available space for the selected root volume, not as a sum of all volumes.</p>
       </section>
       <div class="section-title" id="components"><h2>Hardware overview</h2><span class="muted">Last recorded values · not live sensors</span></div>
       <div class="metrics" id="metrics"></div>
