@@ -10,7 +10,7 @@
   <div class="shell">
     <aside class="sidebar">
       <div class="brand"><span class="brand-icon">▣</span><div><strong>PC Diagnostic</strong><small>Local Health Dashboard</small></div></div>
-      <nav aria-label="Dashboard navigation"><a class="selected" href="#overview">◈ &nbsp; Overview</a><a href="#cpu-details">▣ &nbsp; CPU Details</a><a href="#memory-details">▤ &nbsp; Memory Details</a><a href="#storage-details">▥ &nbsp; Storage Details</a><a href="#network-details">◉ &nbsp; Network Details</a><a href="#battery-details">▰ &nbsp; Battery Details</a><a href="#components">▤ &nbsp; Components</a><a href="#details">ⓘ &nbsp; System Details</a><a href="#reports">▧ &nbsp; Reports</a></nav>
+      <nav aria-label="Dashboard navigation"><a class="selected" href="#overview">◈ &nbsp; Overview</a><a href="#cpu-details">▣ &nbsp; CPU Details</a><a href="#memory-details">▤ &nbsp; Memory Details</a><a href="#storage-details">▥ &nbsp; Storage Details</a><a href="#network-details">◉ &nbsp; Network Details</a><a href="#battery-details">▰ &nbsp; Battery Details</a><a href="#process-details">▦ &nbsp; Processes</a><a href="#components">▤ &nbsp; Components</a><a href="#details">ⓘ &nbsp; System Details</a><a href="#reports">▧ &nbsp; Reports</a></nav>
       <div class="sidebar-bottom"><span class="dot"></span> Local only <small>127.0.0.1:5050</small></div>
     </aside>
     <main id="overview">
@@ -90,6 +90,12 @@
         <div class="battery-meter-heading"><strong>Estimated battery health</strong><span id="battery-health-label">—</span></div>
         <div class="track battery-track" role="progressbar" id="battery-health-progress" aria-label="Estimated battery health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill battery-health-fill" id="battery-health-fill"></div></div>
         <p class="muted">Battery readings come from the latest completed scan. Estimated battery health is full-charge capacity divided by design capacity, only when both capacities are reported in mAh. Charge level is not the same as battery health. Some platforms do not provide capacity or condition details.</p>
+      </section>
+      <section class="panel cpu-details process-details" id="process-details" aria-labelledby="process-details-title">
+        <div class="panel-heading"><div><p class="eyebrow">SYSTEM PROCESSES</p><h2 id="process-details-title">Process monitoring</h2></div><span class="muted" id="process-status" role="status">Waiting for process sample…</span></div>
+        <div class="process-controls"><label for="process-sort">Sort by</label><select id="process-sort"><option value="cpu">Highest CPU usage</option><option value="memory">Highest memory usage</option></select></div>
+        <div class="process-table-wrap"><table class="process-table"><thead><tr><th scope="col">Process</th><th scope="col">PID</th><th scope="col">CPU</th><th scope="col">Memory</th></tr></thead><tbody id="process-rows"><tr><td colspan="4">Loading…</td></tr></tbody></table></div>
+        <p class="muted">Top 15 accessible processes. CPU is measured over a short sampling interval as a percentage of total logical CPU capacity; memory is the process working set, not total system RAM. Protected processes may be omitted. Updates every 10 seconds while this tab is visible. Read-only.</p>
       </section>
       <div class="section-title" id="components"><h2>Hardware overview</h2><span class="muted">Last recorded values · not live sensors</span></div>
       <div class="metrics" id="metrics"></div>
