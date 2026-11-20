@@ -10,8 +10,8 @@
   <div class="shell">
     <aside class="sidebar">
       <div class="brand"><span class="brand-icon">▣</span><div><strong>PC Diagnostic</strong><small>Local Health Dashboard</small></div></div>
-      <nav aria-label="Dashboard navigation"><a class="selected" href="#overview">◈ &nbsp; Overview</a><a href="#components">▤ &nbsp; Components</a><a href="#details">ⓘ &nbsp; System Details</a><a href="#reports">▧ &nbsp; Reports</a></nav>
-      <div class="sidebar-bottom"><span class="dot"></span> Local only <small>127.0.0.1:5000</small></div>
+      <nav aria-label="Dashboard navigation"><a class="selected" href="#overview">◈ &nbsp; Overview</a><a href="#cpu-details">▣ &nbsp; CPU Details</a><a href="#components">▤ &nbsp; Components</a><a href="#details">ⓘ &nbsp; System Details</a><a href="#reports">▧ &nbsp; Reports</a></nav>
+      <div class="sidebar-bottom"><span class="dot"></span> Local only <small>127.0.0.1:5050</small></div>
     </aside>
     <main id="overview">
       <header><div><p class="eyebrow">SYSTEM MONITORING</p><h1>System Health <span class="chip">Diagnostic snapshot</span></h1><p class="muted" id="machine">Loading your most recent scan…</p></div><div class="scan-controls"><span class="muted" id="scan-status" role="status">Automatic full scans every 5 minutes while this tab is visible</span><button id="scan-now" type="button">▶ &nbsp; Run new scan</button><button id="refresh" type="button">↻ &nbsp; Reload report</button></div></header>
@@ -25,6 +25,17 @@
         <section class="panel live-panel"><div class="live-heading"><div><p class="eyebrow">PROCESSOR</p><h2>CPU usage</h2></div><strong class="live-value" id="live-cpu">—</strong></div><svg class="live-chart" id="cpu-chart" role="img" aria-label="CPU utilization history" viewBox="0 0 500 140" preserveAspectRatio="none"><path class="gridline" d="M0 35 H500 M0 70 H500 M0 105 H500"/><g id="cpu-line"></g></svg><p class="muted">Last 30 samples · 10-second interval</p></section>
         <section class="panel live-panel"><div class="live-heading"><div><p class="eyebrow">MEMORY PRESSURE</p><h2>System-wide free memory</h2></div><strong class="live-value" id="live-memory">—</strong></div><svg class="live-chart" id="memory-chart" role="img" aria-label="macOS memory pressure free percentage history" viewBox="0 0 500 140" preserveAspectRatio="none"><path class="gridline" d="M0 35 H500 M0 70 H500 M0 105 H500"/><g id="memory-line"></g></svg><p class="muted">macOS memory_pressure metric · not physical RAM free</p></section>
       </div>
+      <section class="panel cpu-details" id="cpu-details" aria-labelledby="cpu-details-title">
+        <div class="panel-heading"><div><p class="eyebrow">PROCESSOR DETAILS</p><h2 id="cpu-details-title">CPU monitoring</h2></div><span class="muted">Live samples · 10-second interval</span></div>
+        <dl id="cpu-facts"></dl>
+        <div class="cpu-stats">
+          <div><span class="muted">Current utilization</span><strong id="cpu-current">—</strong></div>
+          <div><span class="muted">Average (observed)</span><strong id="cpu-average">—</strong></div>
+          <div><span class="muted">Peak (observed)</span><strong id="cpu-peak">—</strong></div>
+          <div><span class="muted">Samples collected</span><strong id="cpu-count">0</strong></div>
+        </div>
+        <p class="muted" id="cpu-explanation">Statistics reflect only the last 30 successful live samples collected in this browser tab, not historical system-wide averages. CPU temperature and per-core usage are not measured by this dashboard.</p>
+      </section>
       <div class="section-title" id="components"><h2>Hardware overview</h2><span class="muted">Last recorded values · not live sensors</span></div>
       <div class="metrics" id="metrics"></div>
       <div class="lower">
