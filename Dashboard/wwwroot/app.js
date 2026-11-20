@@ -29,6 +29,7 @@ function render(report, file) {
   const low=freePct!==null&&freePct<10;
   $('warning').classList.toggle('hidden',!low);
   if(low)$('warning').textContent='⚠ Low disk space — '+freePct.toFixed(1)+'% free ('+bytes(free)+' available)';
+  facts('cpu-facts',[['Processor',sys.CpuModel],['Logical CPU count',sys.CpuCores],['Architecture',sys.Architecture]]);
   facts('system-facts',[['Operating system',sys.OsDescription],['Processor',sys.CpuModel],['CPU cores',sys.CpuCores],['Memory',bytes(sys.RamBytes)],['Architecture',sys.Architecture],['.NET version',sys.DotNetVersion]]);
   const items=health.Items??[], find=n=>items.find(i=>i.Name===n);
   const cpu=find('CPU'), ram=find('RAM'), storage=find('Disk'), net=find('Network'), batt=find('Battery');
@@ -113,6 +114,11 @@ async function sampleLive() {
       return;
     }
     appendSample(liveSeries.cpu, data.cpuUsagePercent);
+    const validCpu = liveSeries.cpu.filter(Number.isFinite);
+    $('cpu-current').textContent = Number.isFinite(data.cpuUsagePercent) ? data.cpuUsagePercent.toFixed(1) + '%' : 'N/A';
+    $('cpu-average').textContent = validCpu.length ? (validCpu.reduce((sum, n) => sum + n, 0) / validCpu.length).toFixed(1) + '%' : 'N/A';
+    $('cpu-peak').textContent = validCpu.length ? Math.max(...validCpu).toFixed(1) + '%' : 'N/A';
+    $('cpu-count').textContent = String(validCpu.length);
     appendSample(liveSeries.memory, data.macMemoryPressureFreePercent);
     $('live-cpu').textContent = Number.isFinite(data.cpuUsagePercent) ? data.cpuUsagePercent.toFixed(1) + '%' : 'N/A';
     $('live-memory').textContent = Number.isFinite(data.macMemoryPressureFreePercent) ? data.macMemoryPressureFreePercent + '%' : 'N/A';
