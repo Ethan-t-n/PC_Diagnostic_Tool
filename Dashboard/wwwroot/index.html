@@ -14,7 +14,7 @@
       <div class="sidebar-bottom"><span class="dot"></span> Local only <small>127.0.0.1:5000</small></div>
     </aside>
     <main id="overview">
-      <header><div><p class="eyebrow">SYSTEM MONITORING</p><h1>System Health <span class="chip">Diagnostic snapshot</span></h1><p class="muted" id="machine">Loading your most recent scan…</p></div><button id="refresh" type="button">↻ &nbsp; Reload report</button></header>
+      <header><div><p class="eyebrow">SYSTEM MONITORING</p><h1>System Health <span class="chip">Diagnostic snapshot</span></h1><p class="muted" id="machine">Loading your most recent scan…</p></div><div class="scan-controls"><span class="muted" id="scan-status" role="status">Automatic full scans every 5 minutes while this tab is visible</span><button id="scan-now" type="button">▶ &nbsp; Run new scan</button><button id="refresh" type="button">↻ &nbsp; Reload report</button></div></header>
       <div id="error" role="status" class="notice hidden"></div>
       <div class="hero">
         <section class="panel score-panel"><div class="score-ring" id="ring"><div><strong id="overall">—</strong><small>/100</small></div></div><div class="score-copy"><p class="eyebrow">OVERALL HEALTH</p><h2 id="overall-label">Waiting for scan</h2><p class="muted">Calculated by your existing C# diagnostic engine.</p><div id="warning" class="warning hidden"></div></div></section>
