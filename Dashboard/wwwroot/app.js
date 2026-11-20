@@ -68,3 +68,63 @@ $('download').addEventListener('click',()=>{
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 load();
+const liveSeries = { cpu: [], memory: [] };
+let liveBusy = false;
+function appendSample(series, value) {
+  series.push(Number.isFinite(value) ? pct(value) : null);
+  if (series.length > 30) series.shift();
+}
+function drawSeries(id, series) {
+  // Gaps are preserved when a measurement is unavailable.
+  const paths = [];
+  let segment = [];
+  series.forEach((value, i) => {
+    if (value === null) {
+      if (segment.length) paths.push(segment);
+      segment = [];
+    } else {
+      const x = series.length === 1 ? 500 : i * 500 / (series.length - 1);
+      segment.push(x.toFixed(1) + ',' + (140 - value * 1.4).toFixed(1));
+    }
+  });
+  if (segment.length) paths.push(segment);
+  const svg = $(id);
+  // Multiple polylines allow missing samples to be shown as gaps.
+  svg.replaceChildren(...paths.map(points => {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    line.setAttribute('points', points.join(' '));
+    line.setAttribute('fill', 'none');
+    line.setAttribute('stroke', id === 'cpu-line' ? '#ae86ff' : '#43dba1');
+    line.setAttribute('stroke-width', '3');
+    line.setAttribute('stroke-linejoin', 'round');
+    line.setAttribute('stroke-linecap', 'round');
+    return line;
+  }));
+}
+async function sampleLive() {
+  if (liveBusy || document.hidden) return;
+  liveBusy = true;
+  try {
+    const response = await fetch('/api/live', { cache: 'no-store' });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const data = await response.json();
+    if (!data.supported) {
+      $('live-status').textContent = data.reason ?? 'Live monitoring unavailable';
+      return;
+    }
+    appendSample(liveSeries.cpu, data.cpuUsagePercent);
+    appendSample(liveSeries.memory, data.macMemoryPressureFreePercent);
+    $('live-cpu').textContent = Number.isFinite(data.cpuUsagePercent) ? data.cpuUsagePercent.toFixed(1) + '%' : 'N/A';
+    $('live-memory').textContent = Number.isFinite(data.macMemoryPressureFreePercent) ? data.macMemoryPressureFreePercent + '%' : 'N/A';
+    drawSeries('cpu-line', liveSeries.cpu);
+    drawSeries('memory-line', liveSeries.memory);
+    $('live-status').textContent = 'Live · last updated ' + new Date(data.sampledAtUtc).toLocaleTimeString();
+  } catch (error) {
+    $('live-status').textContent = 'Live data unavailable (' + error.message + ')';
+  } finally {
+    liveBusy = false;
+  }
+}
+sampleLive();
+setInterval(sampleLive, 10000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) sampleLive(); });
