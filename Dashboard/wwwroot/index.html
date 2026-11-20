@@ -10,7 +10,7 @@
   <div class="shell">
     <aside class="sidebar">
       <div class="brand"><span class="brand-icon">▣</span><div><strong>PC Diagnostic</strong><small>Local Health Dashboard</small></div></div>
-      <nav aria-label="Dashboard navigation"><a class="selected" href="#overview">◈ &nbsp; Overview</a><a href="#cpu-details">▣ &nbsp; CPU Details</a><a href="#memory-details">▤ &nbsp; Memory Details</a><a href="#storage-details">▥ &nbsp; Storage Details</a><a href="#network-details">◉ &nbsp; Network Details</a><a href="#components">▤ &nbsp; Components</a><a href="#details">ⓘ &nbsp; System Details</a><a href="#reports">▧ &nbsp; Reports</a></nav>
+      <nav aria-label="Dashboard navigation"><a class="selected" href="#overview">◈ &nbsp; Overview</a><a href="#cpu-details">▣ &nbsp; CPU Details</a><a href="#memory-details">▤ &nbsp; Memory Details</a><a href="#storage-details">▥ &nbsp; Storage Details</a><a href="#network-details">◉ &nbsp; Network Details</a><a href="#battery-details">▰ &nbsp; Battery Details</a><a href="#components">▤ &nbsp; Components</a><a href="#details">ⓘ &nbsp; System Details</a><a href="#reports">▧ &nbsp; Reports</a></nav>
       <div class="sidebar-bottom"><span class="dot"></span> Local only <small>127.0.0.1:5050</small></div>
     </aside>
     <main id="overview">
@@ -73,6 +73,20 @@
         <h3>Connection information</h3>
         <dl id="network-facts"></dl>
         <p class="muted">Values reflect the most recent completed diagnostic scan, not a continuous network test. The network health result uses the internet ping recorded during that scan.</p>
+      </section>
+      <section class="panel cpu-details battery-details" id="battery-details" aria-labelledby="battery-details-title">
+        <div class="panel-heading"><div><p class="eyebrow">BATTERY DETAILS</p><h2 id="battery-details-title">Battery monitoring</h2></div><span class="muted">Latest diagnostic scan · not live</span></div>
+        <div class="cpu-stats">
+          <div><span class="muted">Current charge</span><strong id="battery-charge">—</strong></div>
+          <div><span class="muted">Charging status</span><strong id="battery-charging">—</strong></div>
+          <div><span class="muted">Battery condition</span><strong id="battery-condition">—</strong></div>
+          <div><span class="muted">Cycle count</span><strong id="battery-cycles">—</strong></div>
+        </div>
+        <div class="track battery-track" role="progressbar" id="battery-progress" aria-label="Battery charge" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill good" id="battery-fill"></div></div>
+        <p class="muted" id="battery-status-note"></p>
+        <h3>Capacity and estimated health</h3>
+        <dl id="battery-facts"></dl>
+        <p class="muted">Battery readings come from the latest completed scan. Estimated battery health is full-charge capacity divided by design capacity, only when both capacities are reported in mAh. Charge level is not the same as battery health. Some platforms do not provide capacity or condition details.</p>
       </section>
       <div class="section-title" id="components"><h2>Hardware overview</h2><span class="muted">Last recorded values · not live sensors</span></div>
       <div class="metrics" id="metrics"></div>
